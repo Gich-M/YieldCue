@@ -1,0 +1,16 @@
+{
+  "name": "@yieldcue/domain",
+  "version": "0.1.0",
+  "description": "Pure business logic for YieldCue",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "test": "node --import tsx --test __tests__/*.test.ts __tests__/**/*.test.ts",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@yieldcue/contracts": "*"
+  }
+}

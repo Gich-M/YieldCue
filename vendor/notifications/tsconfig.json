@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@yieldcue/contracts": ["../contracts/index.ts"],
+      "@yieldcue/contracts/*": ["../contracts/*"]
+    }
+  },
+  "include": ["./**/*.ts"]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@yieldcue/self-hosted",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted YieldCue client: Hono + HTMX + SQLite, single user, no build step",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "workspaces": [
+    "vendor/*"
+  ],
+  "scripts": {
+    "dev": "node --import tsx src/index.ts",
+    "start": "node --import tsx src/index.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "node --import tsx --test src/__tests__/**/*.test.ts",
+    "check:boundary": "node scripts/check-domain-boundary.mjs"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.5",
+    "@yieldcue/contracts": "*",
+    "@yieldcue/domain": "*",
+    "@yieldcue/notifications": "*",
+    "hono": "^4.13.14",
+    "tsx": "^4.22.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "eslint": "^9.39.4",
+    "typescript": "^6.0.3"
+  }
+}

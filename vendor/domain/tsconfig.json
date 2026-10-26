@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@yieldcue/contracts": ["../contracts/index.ts"],
+      "@yieldcue/contracts/*": ["../contracts/*"],
+      "@yieldcue/domain": ["./index.ts"]
+    }
+  },
+  "include": ["./**/*.ts"]
+}
