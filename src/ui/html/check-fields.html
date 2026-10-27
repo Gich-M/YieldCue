@@ -1,0 +1,16 @@
+{{type_field}}
+<div class="form-row">
+  <div class="field">
+    <label for="name">Name</label>
+    <input id="name" type="text" name="name" value="{{name}}" required>
+  </div>
+  <div class="field">
+    <label for="severity">Severity</label>
+    <select id="severity" name="severity">{{severity_options}}</select>
+  </div>
+</div>
+<div class="field checkbox-row">
+  <input type="checkbox" id="is_enabled" name="is_enabled"{{enabled}}>
+  <label for="is_enabled">Enabled</label>
+</div>
+{{config_fields}}

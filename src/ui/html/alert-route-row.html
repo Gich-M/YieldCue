@@ -1,0 +1,14 @@
+<tr>
+  <td>{{kind}}</td>
+  <td>{{destination}}</td>
+  <td>{{filters}}</td>
+  <td>{{status}}</td>
+  <td class="actions">
+    <form class="inline-form" method="post" action="/settings/alert-routes/{{id}}/toggle">
+      <button class="btn small" type="submit">{{toggle_label}}</button>
+    </form>
+    <form class="inline-form" method="post" action="/settings/alert-routes/{{id}}/delete" hx-post="/settings/alert-routes/{{id}}/delete" hx-confirm="Delete this alert destination?">
+      <button class="btn small danger" type="submit">Delete</button>
+    </form>
+  </td>
+</tr>

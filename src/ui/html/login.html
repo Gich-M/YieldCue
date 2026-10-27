@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in · YieldCue</title>
+    <link rel="icon" type="image/svg+xml" href="/static/app-icon.svg">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+      document.documentElement.setAttribute(
+        'data-theme',
+        localStorage.getItem('yieldcue-theme') === 'light' ? 'light' : 'dark'
+      )
+    </script>
+    <script src="/static/theme.js" defer></script>
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-card" aria-labelledby="login-title">
+        <a class="login-brand" href="/login" aria-label="YieldCue sign in">
+          <img src="/static/app-icon.svg" alt="">
+          <span>YieldCue</span>
+        </a>
+
+        <div class="login-copy">
+          <p class="login-eyebrow">Self-hosted control plane</p>
+          <h1 id="login-title">Welcome back</h1>
+          <p>Sign in to monitor workflow outcomes and respond to incidents.</p>
+        </div>
+
+        {{error}}
+
+        <form method="post" action="/login" class="login-form">
+          <input type="hidden" name="next" value="{{next}}">
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" type="text" name="username" value="operator" autocomplete="username" required autofocus>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" type="password" name="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn primary login-submit" type="submit">Sign in</button>
+        </form>
+
+        <p class="login-note">Use the value configured for <code>YIELDCUE_AUTH_TOKEN</code>.</p>
+      </section>
+    </main>
+  </body>
+</html>

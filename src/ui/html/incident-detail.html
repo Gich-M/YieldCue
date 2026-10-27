@@ -1,0 +1,30 @@
+<div class="page-head">
+  <div>
+    <h1>{{title}} {{status_chip}} {{severity_chip}}</h1>
+    <p class="lede">{{description}}</p>
+  </div>
+  <a class="btn" href="/incidents">Back</a>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Actions</h2></div>
+  {{actions}}
+</div>
+
+<div class="card">
+  <h2>Details</h2>
+  <dl class="meta">
+    <dt>Workflow</dt>
+    <dd>{{workflow}}</dd>
+    <dt>Check</dt>
+    <dd>{{check}}</dd>
+    <dt>Opened</dt>
+    <dd>{{opened_at}}</dd>
+    {{extra_times}}
+  </dl>
+</div>
+
+<div class="card">
+  <h2>Timeline</h2>
+  {{timeline}}
+</div>

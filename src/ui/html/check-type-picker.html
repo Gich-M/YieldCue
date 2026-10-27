@@ -1,0 +1,4 @@
+<form class="field" method="get" action="/workflows/{{workflow_id}}/checks/new">
+  <label for="type">Check type</label>
+  <select id="type" name="type" onchange="this.form.requestSubmit()">{{options}}</select>
+</form>

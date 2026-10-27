@@ -140,6 +140,7 @@ export function buildSetupBundle(db: DatabaseSync): SelfHostedSetupBundle {
 }
 
 export function handleExport(c: Context, db: DatabaseSync): Response {
+  c.header('Content-Disposition', 'attachment; filename="yieldcue-export.json"')
   return c.json(buildExport(db))
 }
 

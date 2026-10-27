@@ -7,7 +7,7 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Context } from 'hono'
-import type { CheckStateSnapshot, Event, EventType } from '@yieldcue/contracts'
+import type { Check, CheckStateSnapshot, Event, EventType } from '@yieldcue/contracts'
 import { evaluateEvent } from '@yieldcue/domain'
 import {
   CLIENT_TENANT_ID,
@@ -32,6 +32,7 @@ const MAX_BODY_BYTES = 16 * 1024
 const MAX_METRIC_KEYS = 16
 const MAX_CONTEXT_DEPTH = 3
 const MAX_KEY_BYTES = 128
+const DAY_MS = 86_400_000
 
 const EVENT_TYPES = new Set(['heartbeat', 'signal'])
 const EVENT_STATUSES = new Set(['ok', 'warn', 'error'])
@@ -249,7 +250,46 @@ function errorBody(
   )
 }
 
+/**
+ * Resolves an already-persisted idempotency key to its ingest response, or
+ * null when no such event exists. Used for the pre-check and to recover when
+ * a concurrent request wins the insert race instead of surfacing a 500.
+ */
+function idempotencyResponse(
+  c: Context,
+  db: DatabaseSync,
+  workflowId: string,
+  idempotencyKey: string,
+  canonical: string
+): Response | null {
+  const existing = getEventByWorkflowAndKey(db, workflowId, idempotencyKey)
+  if (!existing) return null
+  if (stableStringify(parseJson(existing.payload)) === canonical) {
+    return c.json(
+      {
+        data: { event_id: existing.id, accepted: true, duplicate: true },
+        meta: { received_at: existing.received_at, truncated: false },
+      },
+      202
+    )
+  }
+  return errorBody(
+    c,
+    409,
+    'idempotency_conflict',
+    'idempotency_key reused with different fields',
+    { original_event_id: existing.id }
+  )
+}
+
 export async function handleIngest(c: Context, db: DatabaseSync): Promise<Response> {
+  // Reject obviously oversized bodies before buffering them. The post-read
+  // check below remains the authority for chunked bodies or a lying header.
+  const contentLength = Number(c.req.header('content-length') ?? '0')
+  if (contentLength > MAX_BODY_BYTES) {
+    return errorBody(c, 400, 'validation_error', 'Request body exceeds 16 KB')
+  }
+
   const rawText = await c.req.text()
   if (Buffer.byteLength(rawText, 'utf8') > MAX_BODY_BYTES) {
     return errorBody(c, 400, 'validation_error', 'Request body exceeds 16 KB')
@@ -285,29 +325,14 @@ export async function handleIngest(c: Context, db: DatabaseSync): Promise<Respon
   const canonical = stableStringify(normalized.payload)
 
   if (normalized.idempotency_key !== null) {
-    const existing = getEventByWorkflowAndKey(db, workflow.id, normalized.idempotency_key)
-    if (existing) {
-      if (stableStringify(parseJson(existing.payload)) === canonical) {
-        return c.json(
-          {
-            data: {
-              event_id: existing.id,
-              accepted: true,
-              duplicate: true,
-            },
-            meta: { received_at: existing.received_at, truncated: false },
-          },
-          202
-        )
-      }
-      return errorBody(
-        c,
-        409,
-        'idempotency_conflict',
-        'idempotency_key reused with different fields',
-        { original_event_id: existing.id }
-      )
-    }
+    const existingResponse = idempotencyResponse(
+      c,
+      db,
+      workflow.id,
+      normalized.idempotency_key,
+      canonical
+    )
+    if (existingResponse) return existingResponse
   }
 
   const event: Event = {
@@ -342,11 +367,26 @@ export async function handleIngest(c: Context, db: DatabaseSync): Promise<Respon
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')
+    // A concurrent request with the same idempotency_key can win the insert
+    // race between the pre-check and commit. Resolve against the now-committed
+    // row instead of surfacing a 500.
+    if (normalized.idempotency_key !== null) {
+      const existingResponse = idempotencyResponse(
+        c,
+        db,
+        workflow.id,
+        normalized.idempotency_key,
+        canonical
+      )
+      if (existingResponse) return existingResponse
+    }
     throw error
   }
 
   // Delivery is attempted after commit; the response does not wait on it.
-  void processDueDeliveries(db)
+  processDueDeliveries(db).catch((error) =>
+    console.error('Delivery processing failed:', error)
+  )
 
   return c.json(
     {
@@ -355,6 +395,25 @@ export async function handleIngest(c: Context, db: DatabaseSync): Promise<Respon
     },
     202
   )
+}
+
+/**
+ * The widest lookback any enabled check needs. Baseline checks read up to
+ * `lookback_days`, repeated-failure up to `window_minutes`; every other check
+ * type reads only the current event. Bounding the window keeps ingest cost
+ * flat as a workflow's history grows instead of loading it all per event.
+ */
+function historyWindow(checks: Check[], now: string): { since?: string } {
+  let maxMs = 0
+  for (const check of checks) {
+    if (!check.is_enabled) continue
+    if (check.check_type === 'baseline_drop' || check.check_type === 'baseline_spike') {
+      maxMs = Math.max(maxMs, check.config.lookback_days * DAY_MS)
+    } else if (check.check_type === 'repeated_failure') {
+      maxMs = Math.max(maxMs, check.config.window_minutes * 60_000)
+    }
+  }
+  return maxMs > 0 ? { since: new Date(Date.parse(now) - maxMs).toISOString() } : {}
 }
 
 function buildContext(
@@ -381,7 +440,7 @@ function buildContext(
       })
     }
   }
-  const workflowEvents = listWorkflowEvents(db, workflowId)
+  const workflowEvents = listWorkflowEvents(db, workflowId, historyWindow(checks, now))
     .map(eventRowToDomain)
     .filter((e) => !e.is_test)
 

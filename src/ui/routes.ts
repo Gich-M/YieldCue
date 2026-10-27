@@ -1,7 +1,7 @@
 /**
- * Mounts the authenticated UI, static assets, and the data-export routes.
- * Static assets are public (no customer data); every other route here sits
- * behind HTTP Basic auth and the cross-origin state-change guard.
+ * Mounts the browser sign-in, authenticated UI, static assets, and exports.
+ * Static assets and sign-in routes are public; all other UI routes require a
+ * browser session or scripted Basic credential and enforce origin checks on mutations.
  */
 
 import { serveStatic } from '@hono/node-server/serve-static'
@@ -13,6 +13,7 @@ import { handleExport } from '../export.ts'
 import { mountWorkflows } from './workflows.ts'
 import { mountIncidents } from './incidents.ts'
 import { mountSettings } from './settings.ts'
+import { handleLogin, handleLoginPage, handleLogout } from './login.ts'
 
 export function mountUiRoutes(app: Hono, db: DatabaseSync, config: Config): void {
   app.use(
@@ -23,9 +24,13 @@ export function mountUiRoutes(app: Hono, db: DatabaseSync, config: Config): void
     })
   )
 
+  app.get('/login', (c) => handleLoginPage(c, config))
+  app.post('/login', (c) => handleLogin(c, config))
+
   app.use('*', requireUiAuth(config.authToken))
 
   app.get('/', (c) => c.redirect('/workflows', 302))
+  app.post('/logout', (c) => handleLogout(c))
   app.get('/export', (c) => handleExport(c, db))
 
   mountWorkflows(app, db)

@@ -1,7 +1,7 @@
 /**
  * Hono application wiring (§8.7). The only stable external routes are
  * `GET /health` (unauthenticated) and `POST /v1/ingest/events` (Bearer).
- * Every UI, settings, and export route lives behind the UI Basic-auth guard.
+ * Every UI, settings, and export route lives behind the UI session/Basic-auth guard.
  */
 
 import { Hono } from 'hono'
@@ -21,6 +21,11 @@ export function createApp(db: DatabaseSync, config: Config): Hono {
   )
 
   mountUiRoutes(app, db, config)
+
+  app.onError((error, c) => {
+    console.error(error)
+    return c.text('Internal Server Error', 500)
+  })
 
   return app
 }

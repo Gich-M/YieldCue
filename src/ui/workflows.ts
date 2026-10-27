@@ -31,7 +31,7 @@ import {
   type CheckRow,
   type WorkflowRow,
 } from '../db/types.ts'
-import { chip, escapeHtml, fmtDateTime, pageShell } from './layout.ts'
+import { chip, dataTable, emptyState, escapeHtml, fmtDateTime, pageShell } from './layout.ts'
 import {
   CHECK_TYPES,
   CHECK_TYPE_LABELS,
@@ -39,10 +39,24 @@ import {
   renderConfigFields,
   summarizeConfig,
 } from './check-config.ts'
+import { htmlTemplate, renderHtml } from './templates.ts'
 import { formBody, readFlash, redirectWithFlash } from './helpers.ts'
 
 const STATUSES = ['active', 'paused', 'disabled'] as const
 const SEVERITIES: Severity[] = ['critical', 'warning', 'info']
+const PROVIDERS = [
+  ['zapier', 'Zapier - Webhook by Zap'],
+  ['make', 'Make - HTTP module'],
+  ['n8n', 'n8n - HTTP Request node'],
+  ['airtable', 'Airtable - Automation script'],
+  ['hubspot', 'HubSpot - Workflow action'],
+] as const
+const ENVIRONMENTS = [
+  ['', 'None'],
+  ['production', 'Production'],
+  ['staging', 'Staging'],
+  ['development', 'Development'],
+] as const
 
 function isValidStatus(value: string): value is (typeof STATUSES)[number] {
   return (STATUSES as readonly string[]).includes(value)
@@ -64,107 +78,95 @@ function buildMetadata(body: Record<string, string>): Record<string, string> {
 function workflowFields(workflow?: WorkflowRow): string {
   const value = (key: string) =>
     workflow ? escapeHtml(String((parseJson(workflow.metadata) as Record<string, unknown>)[key] ?? '')) : ''
-  return `
-    <div class="form-row">
-      <div class="field">
-        <label for="name">Name</label>
-        <input id="name" type="text" name="name" value="${workflow ? escapeHtml(workflow.name) : ''}" required>
-      </div>
-      <div class="field">
-        <label for="status">Status</label>
-        <select id="status" name="status">
-          ${STATUSES.map((s) => `<option value="${s}"${workflow?.status === s ? ' selected' : ''}>${s}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    ${
-      workflow
-        ? ''
-        : `<div class="field">
-            <label for="workflow_key">Workflow key</label>
-            <input id="workflow_key" type="text" name="workflow_key" required>
-            <div class="hint">Stable key senders use to target this workflow via the ingest endpoint.</div>
-          </div>`
-    }
-    <div class="field">
-      <label for="description">Description</label>
-      <textarea id="description" name="description">${workflow ? escapeHtml(workflow.description) : ''}</textarea>
-    </div>
-    <div class="form-row">
-      <div class="field">
-        <label for="provider">Provider</label>
-        <input id="provider" type="text" name="metadata.provider" value="${value('provider')}" placeholder="e.g. dbt, Airflow, cron">
-      </div>
-      <div class="field">
-        <label for="environment">Environment</label>
-        <input id="environment" type="text" name="metadata.environment" value="${value('environment')}" placeholder="e.g. production, staging">
-      </div>
-    </div>`
+  const selectedProvider = value('provider') || 'n8n'
+  const selectedEnvironment = value('environment')
+  const providerChoices: ReadonlyArray<readonly [string, string]> =
+    selectedProvider && !PROVIDERS.some(([provider]) => provider === selectedProvider)
+      ? [[selectedProvider, selectedProvider], ...PROVIDERS]
+      : PROVIDERS
+  const environmentChoices: ReadonlyArray<readonly [string, string]> =
+    selectedEnvironment && !ENVIRONMENTS.some(([environment]) => environment === selectedEnvironment)
+      ? [...ENVIRONMENTS, [selectedEnvironment, selectedEnvironment]]
+      : ENVIRONMENTS
+
+  return renderHtml('workflow-fields.html', {
+    name: workflow ? escapeHtml(workflow.name) : '',
+    status_options: STATUSES.map((status) =>
+      renderHtml('option.html', {
+        value: status,
+        selected: workflow?.status === status ? ' selected' : '',
+        label: status,
+      })
+    ).join(''),
+    workflow_key_field: workflow ? '' : htmlTemplate('workflow-key-field.html'),
+    description: workflow ? escapeHtml(workflow.description) : '',
+    provider_options: providerChoices.map(([provider, label]) =>
+      renderHtml('option.html', {
+        value: escapeHtml(provider),
+        selected: selectedProvider === provider ? ' selected' : '',
+        label: escapeHtml(label),
+      })
+    ).join(''),
+    environment_options: environmentChoices.map(([environment, label]) =>
+      renderHtml('option.html', {
+        value: escapeHtml(environment),
+        selected: selectedEnvironment === environment ? ' selected' : '',
+        label: escapeHtml(label),
+      })
+    ).join(''),
+  })
 }
 
 // --- Workflows list ---
 
 function renderWorkflowList(rows: ReturnType<typeof listWorkflows>): string {
-  if (rows.length === 0) {
-    return `<div class="page-head">
-        <h1>Workflows</h1>
-        <a class="btn primary" href="/workflows/new">New workflow</a>
-      </div>
-      <div class="card"><div class="empty">No workflows yet. Create one to start receiving events.</div></div>`
-  }
+  const table =
+    rows.length === 0
+      ? emptyState('No workflows yet. Create one, then send events to its workflow key.')
+      : dataTable(
+          ['Name', 'Key', 'Status', 'Checks', 'Open', 'Updated'],
+          rows
+            .map(
+              (w) =>
+                renderHtml('workflow-row.html', {
+                  id: escapeHtml(w.id),
+                  name: escapeHtml(w.name),
+                  workflow_key: escapeHtml(w.workflow_key),
+                  status: chip(w.status, w.status),
+                  check_count: String(w.check_count),
+                  open_incident_count: String(w.open_incident_count),
+                  updated_at: fmtDateTime(w.updated_at),
+                })
+            )
+            .join('')
+        )
 
-  const body = rows
-    .map(
-      (w) => `<tr>
-        <td><a href="/workflows/${w.id}">${escapeHtml(w.name)}</a></td>
-        <td><code>${escapeHtml(w.workflow_key)}</code></td>
-        <td>${chip(w.status, w.status)}</td>
-        <td>${w.check_count}</td>
-        <td>${w.open_incident_count}</td>
-        <td>${fmtDateTime(w.updated_at)}</td>
-      </tr>`
-    )
-    .join('')
-
-  return `<div class="page-head">
-      <h1>Workflows</h1>
-      <a class="btn primary" href="/workflows/new">New workflow</a>
-    </div>
-    <div class="card">
-      <table>
-        <thead><tr><th>Name</th><th>Key</th><th>Status</th><th>Checks</th><th>Open</th><th>Updated</th></tr></thead>
-        <tbody>${body}</tbody>
-      </table>
-    </div>`
+  return renderHtml('workflows-list.html', { table })
 }
 
 // --- Workflow detail ---
 
 function checkRowsHtml(workflowId: string, checks: CheckRow[]): string {
   if (checks.length === 0) {
-    return `<div class="empty">No checks yet. Add one to start raising incidents.</div>`
+    return emptyState('No checks yet. Add one to start raising incidents.')
   }
-  return `<table>
-    <thead><tr><th>Name</th><th>Type</th><th>Severity</th><th>Config</th><th></th></tr></thead>
-    <tbody>${checks
+  return dataTable(
+    ['Name', 'Type', 'Severity', 'Config', ''],
+    checks
       .map((check) => {
         const config = parseJson<Record<string, unknown>>(check.config)
-        return `<tr>
-          <td>${escapeHtml(check.name)}${toBool(check.is_enabled) ? '' : ' ' + chip('disabled', 'disabled')}</td>
-          <td>${escapeHtml(CHECK_TYPE_LABELS[check.check_type])}</td>
-          <td>${chip(check.severity, check.severity)}</td>
-          <td class="small muted">${escapeHtml(summarizeConfig(check.check_type, config))}</td>
-          <td class="actions">
-            <a class="btn small" href="/workflows/${workflowId}/checks/${check.id}/edit">Edit</a>
-            <form class="inline-form" method="post" action="/workflows/${workflowId}/checks/${check.id}/delete" hx-post="/workflows/${workflowId}/checks/${check.id}/delete" hx-confirm="Delete this check?">
-              <button class="btn small danger" type="submit">Delete</button>
-            </form>
-          </td>
-        </tr>`
+        return renderHtml('check-row.html', {
+          workflow_id: escapeHtml(workflowId),
+          id: escapeHtml(check.id),
+          name: escapeHtml(check.name),
+          disabled_chip: toBool(check.is_enabled) ? '' : ` ${chip('disabled', 'disabled')}`,
+          type: escapeHtml(CHECK_TYPE_LABELS[check.check_type]),
+          severity: chip(check.severity, check.severity),
+          config: escapeHtml(summarizeConfig(check.check_type, config)),
+        })
       })
-      .join('')}
-    </tbody>
-  </table>`
+      .join('')
+  )
 }
 
 function renderWorkflowDetail(
@@ -175,117 +177,89 @@ function renderWorkflowDetail(
 ): string {
   const metadata = parseJson<Record<string, unknown>>(workflow.metadata)
   const incidentsHtml = recentIncidents.length
-    ? `<table>
-        <thead><tr><th>Incident</th><th>Status</th><th>Severity</th><th>Opened</th></tr></thead>
-        <tbody>${recentIncidents
+    ? dataTable(
+        ['Incident', 'Status', 'Severity', 'Opened'],
+        recentIncidents
           .map(
-            (i) => `<tr>
-              <td><a href="/incidents/${i.id}">${escapeHtml(i.title)}</a></td>
-              <td>${chip(i.status, i.status)}</td>
-              <td>${chip(i.severity, i.severity)}</td>
-              <td>${fmtDateTime(i.opened_at)}</td>
-            </tr>`
+            (i) =>
+              renderHtml('workflow-incident-row.html', {
+                id: escapeHtml(i.id),
+                title: escapeHtml(i.title),
+                status: chip(i.status, i.status),
+                severity: chip(i.severity, i.severity),
+                opened_at: fmtDateTime(i.opened_at),
+              })
           )
-          .join('')}
-        </tbody>
-      </table>`
-    : `<div class="empty">No incidents for this workflow.</div>`
+          .join('')
+      )
+    : emptyState('No incidents for this workflow.')
 
   const eventsHtml = recentEvents.length
-    ? `<table>
-        <thead><tr><th>Type</th><th>Status</th><th>Received</th><th></th></tr></thead>
-        <tbody>${recentEvents
+    ? dataTable(
+        ['Type', 'Status', 'Received', ''],
+        recentEvents
           .map((row) => {
             const e = eventRowToDomain(row)
             const status = (e.payload as { status?: string }).status
-            return `<tr>
-              <td>${escapeHtml(e.event_type)}</td>
-              <td>${status ? chip(status, status === 'ok' ? 'resolved' : status === 'warn' ? 'warning' : 'critical') : '—'}</td>
-              <td>${fmtDateTime(e.received_at)}</td>
-              <td>${e.is_test ? chip('test', 'ignored') : ''}</td>
-            </tr>`
+            return renderHtml('workflow-event-row.html', {
+              event_type: escapeHtml(e.event_type),
+              status: status ? chip(status, status === 'ok' ? 'resolved' : status === 'warn' ? 'warning' : 'critical') : '—',
+              received_at: fmtDateTime(e.received_at),
+              test_chip: e.is_test ? chip('test', 'ignored') : '',
+            })
           })
-          .join('')}
-        </tbody>
-      </table>`
-    : `<div class="empty">No events received yet.</div>`
+          .join('')
+      )
+    : emptyState('No events received yet.')
 
-  return `<div class="page-head">
-      <div>
-        <h1>${escapeHtml(workflow.name)} ${chip(workflow.status, workflow.status)}</h1>
-        <div class="muted">${escapeHtml(workflow.description || 'No description')}</div>
-      </div>
-      <div class="actions">
-        <a class="btn" href="/workflows/${workflow.id}/edit">Edit</a>
-        <form class="inline-form" method="post" action="/workflows/${workflow.id}/delete" hx-post="/workflows/${workflow.id}/delete" hx-confirm="Delete this workflow and all of its checks, events, and incidents?">
-          <button class="btn danger" type="submit">Delete</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Details</h2>
-      <dl class="meta">
-        <dt>Workflow key</dt><dd><code>${escapeHtml(workflow.workflow_key)}</code></dd>
-        <dt>Provider</dt><dd>${escapeHtml(String(metadata.provider ?? '—'))}</dd>
-        <dt>Environment</dt><dd>${escapeHtml(String(metadata.environment ?? '—'))}</dd>
-        <dt>Created</dt><dd>${fmtDateTime(workflow.created_at)}</dd>
-        <dt>Updated</dt><dd>${fmtDateTime(workflow.updated_at)}</dd>
-      </dl>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Checks</h2><a class="btn primary small" href="/workflows/${workflow.id}/checks/new">New check</a></div>
-      ${checkRowsHtml(workflow.id, checks)}
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Recent incidents</h2><a class="btn small" href="/incidents?workflow=${workflow.id}">View all</a></div>
-      ${incidentsHtml}
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Recent events</h2></div>
-      ${eventsHtml}
-    </div>`
+  return renderHtml('workflow-detail.html', {
+    id: escapeHtml(workflow.id),
+    name: escapeHtml(workflow.name),
+    status_chip: chip(workflow.status, workflow.status),
+    description: escapeHtml(workflow.description || 'No description'),
+    workflow_key: escapeHtml(workflow.workflow_key),
+    provider: escapeHtml(String(metadata.provider ?? '—')),
+    environment: escapeHtml(String(metadata.environment ?? '—')),
+    checks: checkRowsHtml(workflow.id, checks),
+    incidents: incidentsHtml,
+    events: eventsHtml,
+  })
 }
 
 // --- Check form ---
 
 function checkTypePicker(workflowId: string, selected: CheckType): string {
-  return `<div class="actions" style="margin-bottom:1rem">${CHECK_TYPES.map(
-    (t) =>
-      `<a class="btn small${t === selected ? ' primary' : ''}" href="/workflows/${workflowId}/checks/new?type=${t}">${escapeHtml(CHECK_TYPE_LABELS[t])}</a>`
-  ).join('')}</div>`
+  const options = CHECK_TYPES.map((type) =>
+    renderHtml('option.html', {
+      value: type,
+      selected: type === selected ? ' selected' : '',
+      label: escapeHtml(CHECK_TYPE_LABELS[type]),
+    })
+  ).join('')
+  return renderHtml('check-type-picker.html', { workflow_id: escapeHtml(workflowId), options })
 }
 
 function checkFormFields(checkType: CheckType, check?: CheckRow): string {
   const config = check ? parseJson<Record<string, unknown>>(check.config) : {}
-  const typeSelect = check
-    ? `<p class="muted">Type: <strong>${escapeHtml(CHECK_TYPE_LABELS[check.check_type])}</strong></p>`
-    : `<input type="hidden" name="check_type" value="${escapeHtml(checkType)}">`
+  const typeField = check
+    ? renderHtml('check-type-display.html', { type: escapeHtml(CHECK_TYPE_LABELS[check.check_type]) })
+    : renderHtml('check-type-hidden.html', { type: escapeHtml(checkType) })
   const severity = check?.severity ?? 'warning'
   const name = check?.name ?? ''
 
-  return `
-    ${typeSelect}
-    <div class="form-row">
-      <div class="field">
-        <label for="name">Name</label>
-        <input id="name" type="text" name="name" value="${escapeHtml(name)}" required>
-      </div>
-      <div class="field">
-        <label for="severity">Severity</label>
-        <select id="severity" name="severity">
-          ${SEVERITIES.map((s) => `<option value="${s}"${severity === s ? ' selected' : ''}>${s}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    <div class="field checkbox-row">
-      <input type="checkbox" id="is_enabled" name="is_enabled"${check ? (toBool(check.is_enabled) ? ' checked' : '') : ' checked'}>
-      <label for="is_enabled">Enabled</label>
-    </div>
-    ${renderConfigFields(checkType, config)}`
+  return renderHtml('check-fields.html', {
+    type_field: typeField,
+    name: escapeHtml(name),
+    severity_options: SEVERITIES.map((item) =>
+      renderHtml('option.html', {
+        value: item,
+        selected: severity === item ? ' selected' : '',
+        label: item,
+      })
+    ).join(''),
+    enabled: check ? (toBool(check.is_enabled) ? ' checked' : '') : ' checked',
+    config_fields: renderConfigFields(checkType, config),
+  })
 }
 
 // --- Handlers ---
@@ -299,15 +273,17 @@ export function mountWorkflows(app: Hono, db: DatabaseSync): void {
   })
 
   wf.get('/new', (c) => {
-    const content = `<div class="page-head"><h1>New workflow</h1></div>
-      <div class="card">
-        <form method="post" action="/workflows">${workflowFields()}
-          <div class="actions">
-            <button class="btn primary" type="submit">Create workflow</button>
-            <a class="btn" href="/workflows">Cancel</a>
-          </div>
-        </form>
-      </div>`
+    const content = renderHtml('form-page.html', {
+      heading: 'New workflow',
+      lede: 'The workflow key is what senders put in each event.',
+      back_href: '/workflows',
+      back_label: 'Back',
+      preamble: '',
+      action: '/workflows',
+      fields: workflowFields(),
+      submit_label: 'Create workflow',
+      cancel_href: '/workflows',
+    })
     return c.html(pageShell({ title: 'New workflow', active: 'workflows', content }))
   })
 
@@ -338,7 +314,7 @@ export function mountWorkflows(app: Hono, db: DatabaseSync): void {
       workflow,
       listChecks(db, workflow.id),
       listIncidents(db, { workflow_id: workflow.id, limit: 5 }),
-      listWorkflowEvents(db, workflow.id, 20)
+      listWorkflowEvents(db, workflow.id, { limit: 20 })
     )
     return c.html(pageShell({ title: workflow.name, active: 'workflows', content, flash: readFlash(c) }))
   })
@@ -346,15 +322,17 @@ export function mountWorkflows(app: Hono, db: DatabaseSync): void {
   wf.get('/:id/edit', (c) => {
     const workflow = getWorkflow(db, c.req.param('id'))
     if (!workflow) return c.text('Not found', 404)
-    const content = `<div class="page-head"><h1>Edit workflow</h1></div>
-      <div class="card">
-        <form method="post" action="/workflows/${workflow.id}">${workflowFields(workflow)}
-          <div class="actions">
-            <button class="btn primary" type="submit">Save changes</button>
-            <a class="btn" href="/workflows/${workflow.id}">Cancel</a>
-          </div>
-        </form>
-      </div>`
+    const content = renderHtml('form-page.html', {
+      heading: 'Edit workflow',
+      lede: 'The workflow key cannot be changed after creation.',
+      back_href: `/workflows/${workflow.id}`,
+      back_label: 'Back',
+      preamble: '',
+      action: `/workflows/${workflow.id}`,
+      fields: workflowFields(workflow),
+      submit_label: 'Save changes',
+      cancel_href: `/workflows/${workflow.id}`,
+    })
     return c.html(pageShell({ title: `Edit ${workflow.name}`, active: 'workflows', content }))
   })
 
@@ -389,20 +367,15 @@ export function mountWorkflows(app: Hono, db: DatabaseSync): void {
     const checkType: CheckType = (CHECK_TYPES as string[]).includes(requested ?? '')
       ? (requested as CheckType)
       : 'heartbeat'
-    const content = `<div class="page-head">
-        <h1>New check</h1>
-        <a class="btn" href="/workflows/${workflow.id}">Back</a>
-      </div>
-      <div class="card">
-        <h2 class="muted small" style="text-transform:uppercase;letter-spacing:.04em">Check type</h2>
-        ${checkTypePicker(workflow.id, checkType)}
-        <form method="post" action="/workflows/${workflow.id}/checks">${checkFormFields(checkType)}
-          <div class="actions">
-            <button class="btn primary" type="submit">Create check</button>
-            <a class="btn" href="/workflows/${workflow.id}">Cancel</a>
-          </div>
-        </form>
-      </div>`
+    const content = renderHtml('check-form.html', {
+      heading: 'New check',
+      lede: 'Pick a type, then set the threshold that should open an incident.',
+      workflow_id: workflow.id,
+      type_picker: checkTypePicker(workflow.id, checkType),
+      action: `/workflows/${workflow.id}/checks`,
+      fields: checkFormFields(checkType),
+      submit_label: 'Create check',
+    })
     return c.html(pageShell({ title: 'New check', active: 'workflows', content }))
   })
 
@@ -430,18 +403,15 @@ export function mountWorkflows(app: Hono, db: DatabaseSync): void {
     const workflow = getWorkflow(db, c.req.param('id'))
     const check = getCheck(db, c.req.param('checkId'))
     if (!workflow || !check || check.workflow_id !== workflow.id) return c.text('Not found', 404)
-    const content = `<div class="page-head">
-        <h1>Edit check</h1>
-        <a class="btn" href="/workflows/${workflow.id}">Back</a>
-      </div>
-      <div class="card">
-        <form method="post" action="/workflows/${workflow.id}/checks/${check.id}">${checkFormFields(check.check_type, check)}
-          <div class="actions">
-            <button class="btn primary" type="submit">Save changes</button>
-            <a class="btn" href="/workflows/${workflow.id}">Cancel</a>
-          </div>
-        </form>
-      </div>`
+    const content = renderHtml('check-form.html', {
+      heading: 'Edit check',
+      lede: escapeHtml(CHECK_TYPE_LABELS[check.check_type]),
+      workflow_id: workflow.id,
+      type_picker: '',
+      action: `/workflows/${workflow.id}/checks/${check.id}`,
+      fields: checkFormFields(check.check_type, check),
+      submit_label: 'Save changes',
+    })
     return c.html(pageShell({ title: `Edit ${check.name}`, active: 'workflows', content }))
   })
 

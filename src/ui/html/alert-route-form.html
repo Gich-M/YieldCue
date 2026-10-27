@@ -1,0 +1,50 @@
+<div class="page-head">
+  <div>
+    <h1>New alert destination</h1>
+    <p class="lede">{{lede}}</p>
+  </div>
+  <a class="btn" href="/settings">Back</a>
+</div>
+
+<div class="card">
+  <div class="seg">
+    <a class="btn small{{slack_class}}" href="/settings/alert-routes/new?kind=slack_webhook">Slack webhook</a>
+    <a class="btn small{{email_class}}" href="/settings/alert-routes/new?kind=email">Email (SMTP)</a>
+  </div>
+
+  <form method="post" action="/settings/alert-routes">
+    {{destination_fields}}
+
+    <div class="field">
+      <label for="filter_workflow_id">Restrict to workflow</label>
+      <select id="filter_workflow_id" name="filter_workflow_id">
+        <option value="">All workflows</option>
+        {{workflow_options}}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Trigger on severities</label>
+      <p class="hint">Leave all checked to receive every severity.</p>
+      <div class="form-row">
+        {{severity_checks}}
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="cooldown_minutes">Cooldown (minutes)</label>
+      <input id="cooldown_minutes" type="number" name="cooldown_minutes" value="0" min="0">
+      <div class="hint">Minimum gap between alerts for the same incident on this destination.</div>
+    </div>
+
+    <div class="field checkbox-row">
+      <input type="checkbox" id="is_enabled" name="is_enabled" checked>
+      <label for="is_enabled">Enabled</label>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" type="submit">Add destination</button>
+      <a class="btn" href="/settings">Cancel</a>
+    </div>
+  </form>
+</div>

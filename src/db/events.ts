@@ -4,7 +4,7 @@
  */
 import type { DatabaseSync } from 'node:sqlite'
 import type { EventType } from '@yieldcue/contracts'
-import { asRow, asRows, fromBool, toJson, type EventRow } from './types.ts'
+import { asRow, asRows, fromBool, toJson, type DbParams, type EventRow } from './types.ts'
 
 export interface EventInput {
   id: string
@@ -47,17 +47,28 @@ export function getEventByWorkflowAndKey(
   )
 }
 
+export interface WorkflowEventsFilter {
+  since?: string
+  limit?: number
+}
+
 export function listWorkflowEvents(
   db: DatabaseSync,
   workflowId: string,
-  limit?: number
+  filter: WorkflowEventsFilter = {}
 ): EventRow[] {
-  const sql = limit
-    ? 'SELECT * FROM events WHERE workflow_id = ? ORDER BY received_at ASC LIMIT ?'
-    : 'SELECT * FROM events WHERE workflow_id = ? ORDER BY received_at ASC'
-  return asRows<EventRow>(
-    limit ? db.prepare(sql).all(workflowId, limit) : db.prepare(sql).all(workflowId)
-  )
+  const where: string[] = ['workflow_id = ?']
+  const params: DbParams = [workflowId]
+  if (filter.since) {
+    where.push('received_at >= ?')
+    params.push(filter.since)
+  }
+  let sql = `SELECT * FROM events WHERE ${where.join(' AND ')} ORDER BY received_at ASC`
+  if (filter.limit) {
+    sql += ' LIMIT ?'
+    params.push(filter.limit)
+  }
+  return asRows<EventRow>(db.prepare(sql).all(...params))
 }
 
 export function listRecentEvents(db: DatabaseSync, limit: number): EventRow[] {

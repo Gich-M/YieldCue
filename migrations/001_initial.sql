@@ -95,6 +95,8 @@ CREATE TABLE alert_deliveries (
   UNIQUE (alert_route_id, incident_id, state_version)
 );
 CREATE INDEX idx_alert_deliveries_pending ON alert_deliveries(status, next_retry_at);
+-- Most recent delivered row per route + incident, for the cooldown check.
+CREATE INDEX idx_alert_deliveries_lookup ON alert_deliveries(alert_route_id, incident_id, sent_at);
 
 CREATE TABLE check_state (
   id                   TEXT PRIMARY KEY,

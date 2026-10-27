@@ -18,7 +18,8 @@ import {
 import { getWorkflow, listWorkflows } from '../db/workflows.ts'
 import { getCheck } from '../db/checks.ts'
 import { parseJson } from '../db/types.ts'
-import { chip, escapeHtml, fmtDateTime, pageShell } from './layout.ts'
+import { chip, dataTable, emptyState, escapeHtml, fmtDateTime, pageShell } from './layout.ts'
+import { renderHtml } from './templates.ts'
 import { formBody, readFlash, redirectWithFlash } from './helpers.ts'
 
 const KIND_LABELS: Record<string, string> = {
@@ -43,14 +44,18 @@ function statusOptions(selected: string): string {
     ['ignored', 'Ignored'],
   ] as const
   return options
-    .map(([value, label]) => `<option value="${value}"${selected === value ? ' selected' : ''}>${label}</option>`)
+    .map(([value, label]) =>
+      renderHtml('option.html', { value, selected: selected === value ? ' selected' : '', label })
+    )
     .join('')
 }
 
 function severityOptions(selected: string): string {
   const options = [['', 'All'], ['critical', 'Critical'], ['warning', 'Warning'], ['info', 'Info']] as const
   return options
-    .map(([value, label]) => `<option value="${value}"${selected === value ? ' selected' : ''}>${label}</option>`)
+    .map(([value, label]) =>
+      renderHtml('option.html', { value, selected: selected === value ? ' selected' : '', label })
+    )
     .join('')
 }
 
@@ -67,53 +72,46 @@ function renderIncidentList(
     workflow_id: workflowId,
   })
 
-  const workflowSelect = listWorkflows(db)
-    .map((w) => `<option value="${w.id}"${workflowId === w.id ? ' selected' : ''}>${escapeHtml(w.name)}</option>`)
+  const workflows = listWorkflows(db)
+  const workflowById = new Map(workflows.map((workflow) => [workflow.id, workflow]))
+
+  const workflowSelect = workflows
+    .map((workflow) =>
+      renderHtml('option.html', {
+        value: escapeHtml(workflow.id),
+        selected: workflowId === workflow.id ? ' selected' : '',
+        label: escapeHtml(workflow.name),
+      })
+    )
     .join('')
 
-  const filterBar = `<form class="card" method="get" action="/incidents">
-      <div class="form-row">
-        <div class="field"><label for="status">Status</label><select id="status" name="status">${statusOptions(status ?? '')}</select></div>
-        <div class="field"><label for="severity">Severity</label><select id="severity" name="severity">${severityOptions(severity ?? '')}</select></div>
-        <div class="field"><label for="workflow">Workflow</label><select id="workflow" name="workflow"><option value="">All</option>${workflowSelect}</select></div>
-        <div class="field" style="align-self:flex-end"><button class="btn" type="submit">Filter</button></div>
-      </div>
-    </form>`
-
   const table = incidents.length
-    ? `<table>
-        <thead><tr><th>Incident</th><th>Workflow</th><th>Severity</th><th>Status</th><th>Opened</th></tr></thead>
-        <tbody>${incidents
-          .map((i) => {
-            const workflow = getWorkflow(db, i.workflow_id)
-            return `<tr>
-              <td><a href="/incidents/${i.id}">${escapeHtml(i.title)}</a></td>
-              <td>${workflow ? `<a href="/workflows/${workflow.id}">${escapeHtml(workflow.name)}</a>` : '—'}</td>
-              <td>${chip(i.severity, i.severity)}</td>
-              <td>${chip(i.status, i.status)}</td>
-              <td>${fmtDateTime(i.opened_at)}</td>
-            </tr>`
+    ? dataTable(
+        ['Incident', 'Workflow', 'Severity', 'Status', 'Opened'],
+        incidents
+          .map((incident) => {
+            const workflow = workflowById.get(incident.workflow_id)
+            return renderHtml('incident-list-row.html', {
+              id: escapeHtml(incident.id),
+              title: escapeHtml(incident.title),
+              workflow: workflow
+                ? renderHtml('workflow-link.html', { id: escapeHtml(workflow.id), name: escapeHtml(workflow.name) })
+                : '—',
+              severity: chip(incident.severity, incident.severity),
+              status: chip(incident.status, incident.status),
+              opened_at: fmtDateTime(incident.opened_at),
+            })
           })
-          .join('')}
-        </tbody>
-      </table>`
-    : `<div class="empty">No incidents match the current filters.</div>`
+          .join('')
+      )
+    : emptyState('No incidents match the current filters.')
 
-  return `<div class="page-head"><h1>Incidents</h1></div>${filterBar}
-    <div class="card">${table}</div>`
-}
-
-function transitionForm(
-  incidentId: string,
-  action: string,
-  label: string,
-  noteField: boolean,
-  danger = false
-): string {
-  return `<form method="post" action="/incidents/${incidentId}/${action}" style="margin-bottom:0.5rem">
-    ${noteField ? `<div class="field"><input type="text" name="note" placeholder="Optional note"></div>` : ''}
-    <button class="btn ${danger ? 'danger' : 'primary'} small" type="submit">${label}</button>
-  </form>`
+  return renderHtml('incidents-list.html', {
+    status_options: statusOptions(status ?? ''),
+    severity_options: severityOptions(severity ?? ''),
+    workflow_options: workflowSelect,
+    table,
+  })
 }
 
 function renderIncidentDetail(
@@ -126,65 +124,90 @@ function renderIncidentDetail(
   const check = incident.check_id ? getCheck(db, incident.check_id) : null
   const events = listIncidentEvents(db, incident.id)
 
-  const actions: string[] = []
+  const buttons: string[] = []
   if (isValidTransition(incident.status, 'acknowledged')) {
-    actions.push(transitionForm(incident.id, 'acknowledge', 'Acknowledge', true))
+    buttons.push(
+      renderHtml('incident-action-button.html', {
+        incident_id: escapeHtml(incident.id),
+        action: 'acknowledge',
+        class_name: ' primary',
+        label: 'Acknowledge',
+      })
+    )
   }
   if (isValidTransition(incident.status, 'resolved')) {
-    actions.push(transitionForm(incident.id, 'resolve', 'Resolve', true))
+    buttons.push(
+      renderHtml('incident-action-button.html', {
+        incident_id: escapeHtml(incident.id),
+        action: 'resolve',
+        class_name: ' primary',
+        label: 'Resolve',
+      })
+    )
   }
   if (isValidTransition(incident.status, 'ignored')) {
-    actions.push(transitionForm(incident.id, 'ignore', 'Ignore', true, true))
+    buttons.push(
+      renderHtml('incident-action-button.html', {
+        incident_id: escapeHtml(incident.id),
+        action: 'ignore',
+        class_name: ' danger',
+        label: 'Ignore',
+      })
+    )
   }
   if (isValidTransition(incident.status, 'open')) {
-    actions.push(transitionForm(incident.id, 'reopen', 'Reopen', false))
+    buttons.push(
+      renderHtml('incident-action-button.html', {
+        incident_id: escapeHtml(incident.id),
+        action: 'reopen',
+        class_name: '',
+        label: 'Reopen',
+      })
+    )
   }
 
-  const timeline = events.length
-    ? `<ul class="timeline">${events
+  const actions = buttons.length
+    ? renderHtml('incident-actions.html', { incident_id: escapeHtml(incident.id), buttons: buttons.join('') })
+    : emptyState('No further actions for this status.')
+
+  const extraTimes = [
+    incident.acknowledged_at
+      ? renderHtml('incident-extra-time.html', { label: 'Acknowledged', time: fmtDateTime(incident.acknowledged_at) })
+      : '',
+    incident.resolved_at
+      ? renderHtml('incident-extra-time.html', { label: 'Resolved', time: fmtDateTime(incident.resolved_at) })
+      : '',
+  ].join('')
+
+  const timelineItems = events
         .map((e) => {
           const payload = parseJson<Record<string, unknown>>(e.payload)
           const note = payload.reason ?? payload.message
-          return `<li>
-            <span class="t-kind">${escapeHtml(KIND_LABELS[e.kind] ?? e.kind)}</span>
-            <span>${note ? escapeHtml(String(note)) : ''}</span>
-            <span class="t-time">${fmtDateTime(e.created_at)}</span>
-          </li>`
+          return renderHtml('incident-timeline-item.html', {
+            kind: escapeHtml(KIND_LABELS[e.kind] ?? e.kind),
+            note: note ? escapeHtml(String(note)) : '',
+            created_at: fmtDateTime(e.created_at),
+          })
         })
-        .join('')}
-      </ul>`
-    : `<div class="empty">No history.</div>`
+        .join('')
+  const timeline = events.length
+    ? renderHtml('incident-timeline.html', { items: timelineItems })
+    : emptyState('No history yet.')
 
-  return `<div class="page-head">
-      <div>
-        <h1>${escapeHtml(incident.title)} ${chip(incident.status, incident.status)} ${chip(incident.severity, incident.severity)}</h1>
-        <div class="muted">${escapeHtml(incident.description || 'No description')}</div>
-      </div>
-      <a class="btn" href="/incidents">Back</a>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Actions</h2></div>
-      ${actions.length ? `<div class="actions" style="align-items:flex-start">${actions.join('')}</div>` : `<div class="empty">No transitions available for this status.</div>`}
-    </div>
-
-    <div class="card">
-      <h2>Details</h2>
-      <dl class="meta">
-        <dt>Workflow</dt><dd>${workflow ? `<a href="/workflows/${workflow.id}">${escapeHtml(workflow.name)}</a>` : '—'}</dd>
-        <dt>Check</dt><dd>${check ? escapeHtml(check.name) : '—'}</dd>
-        <dt>Opened</dt><dd>${fmtDateTime(incident.opened_at)}</dd>
-        <dt>Acknowledged</dt><dd>${fmtDateTime(incident.acknowledged_at)}</dd>
-        <dt>Resolved</dt><dd>${fmtDateTime(incident.resolved_at)}</dd>
-        <dt>Updated</dt><dd>${fmtDateTime(incident.updated_at)}</dd>
-        <dt>Fingerprint</dt><dd><code class="small">${escapeHtml(incident.fingerprint)}</code></dd>
-      </dl>
-    </div>
-
-    <div class="card">
-      <h2>Timeline</h2>
-      ${timeline}
-    </div>`
+  return renderHtml('incident-detail.html', {
+    title: escapeHtml(incident.title),
+    status_chip: chip(incident.status, incident.status),
+    severity_chip: chip(incident.severity, incident.severity),
+    description: escapeHtml(incident.description || 'No description'),
+    actions,
+    workflow: workflow
+      ? renderHtml('workflow-link.html', { id: escapeHtml(workflow.id), name: escapeHtml(workflow.name) })
+      : '—',
+    check: check ? escapeHtml(check.name) : '—',
+    opened_at: fmtDateTime(incident.opened_at),
+    extra_times: extraTimes,
+    timeline,
+  })
 }
 
 export function mountIncidents(app: Hono, db: DatabaseSync): void {

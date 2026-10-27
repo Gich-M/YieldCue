@@ -1,0 +1,51 @@
+<input type="hidden" name="integration_kind" value="email">
+
+<div class="field">
+  <label for="to">To address</label>
+  <input id="to" type="email" name="to" required autocomplete="off" placeholder="ops@example.com">
+  <div class="hint">Where incident alerts are delivered.</div>
+</div>
+
+<div class="form-row">
+  <div class="field">
+    <label for="from_address">From address</label>
+    <input id="from_address" type="email" name="from_address" required autocomplete="off" placeholder="alerts@example.com">
+  </div>
+  <div class="field">
+    <label for="from_name">From name (optional)</label>
+    <input id="from_name" type="text" name="from_name" placeholder="YieldCue">
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="field">
+    <label for="host">SMTP host</label>
+    <input id="host" type="text" name="host" required autocomplete="off" placeholder="smtp.example.com">
+  </div>
+  <div class="field">
+    <label for="port">Port</label>
+    <input id="port" type="number" name="port" required min="1" max="65535" value="587">
+  </div>
+</div>
+
+<div class="field">
+  <label for="encryption">Encryption</label>
+  <select id="encryption" name="encryption">
+    <option value="starttls" selected>STARTTLS (port 587)</option>
+    <option value="tls">TLS (port 465)</option>
+    <option value="none">None (local relay only)</option>
+  </select>
+  <div class="hint">Use STARTTLS or TLS unless you are talking to a mail server on the same host.</div>
+</div>
+
+<div class="form-row">
+  <div class="field">
+    <label for="username">Username (optional)</label>
+    <input id="username" type="text" name="username" autocomplete="off">
+  </div>
+  <div class="field">
+    <label for="password">Password (optional)</label>
+    <input id="password" type="password" name="password" autocomplete="new-password">
+  </div>
+</div>
+<p class="hint">Leave username and password empty for an unauthenticated local relay. Credentials are stored unencrypted in the local database.</p>

@@ -1,0 +1,29 @@
+<div class="form-row">
+  <div class="field">
+    <label for="name">Name</label>
+    <input id="name" type="text" name="name" value="{{name}}" required>
+  </div>
+  <div class="field">
+    <label for="status">Status</label>
+    <select id="status" name="status">{{status_options}}</select>
+  </div>
+</div>
+{{workflow_key_field}}
+<div class="field">
+  <label for="description">Description</label>
+  <textarea id="description" name="description">{{description}}</textarea>
+</div>
+<div class="form-row">
+  <div class="field">
+    <label for="provider">Provider</label>
+    <select id="provider" name="metadata.provider">
+      {{provider_options}}
+    </select>
+  </div>
+  <div class="field">
+    <label for="environment">Environment</label>
+    <select id="environment" name="metadata.environment">
+      {{environment_options}}
+    </select>
+  </div>
+</div>

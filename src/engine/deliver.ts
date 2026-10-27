@@ -1,11 +1,11 @@
 /**
- * Client-local delivery adapters. The client needs the HTTP status code to
- * apply the §8.3 retry policy (429/5xx retryable, other 4xx terminal), which
- * the vendored notification helpers do not expose. Only user-configured alert
- * destinations are contacted; there is no other outbound traffic (§8.13).
+ * Client-local delivery adapters. Slack uses the webhook HTTP status for the
+ * §8.3 retry policy. Email talks only to the operator's SMTP host. There is
+ * no other outbound traffic (§8.13).
  */
 
 import { parseJson, type AlertRouteRow, type IncidentRow } from '../db/types.ts'
+import { parseSmtpDestination, sendSmtpEmail } from './smtp.ts'
 
 const TIMEOUT_MS = 5000
 
@@ -22,13 +22,6 @@ export interface SendResult {
 
 interface SlackDestination {
   webhook_url: string
-}
-
-interface EmailDestination {
-  api_key: string
-  from_address: string
-  from_name?: string
-  to: string
 }
 
 async function fetchWithTimeout(
@@ -105,7 +98,9 @@ async function sendSlack(ctx: DeliveryContext): Promise<SendResult> {
 }
 
 async function sendEmail(ctx: DeliveryContext): Promise<SendResult> {
-  const dest = parseJson<EmailDestination>(ctx.route.destination)
+  const dest = parseSmtpDestination(parseJson(ctx.route.destination))
+  if (!dest) return { ok: false, retryable: false }
+
   const subject = `[${ctx.incident.severity.toUpperCase()}] ${ctx.incident.title}`
   const text = [
     `[${ctx.incident.severity.toUpperCase()}] ${ctx.incident.title}`,
@@ -113,38 +108,15 @@ async function sendEmail(ctx: DeliveryContext): Promise<SendResult> {
     ctx.incident.description || '',
     '',
     `Workflow: ${ctx.workflowName}`,
-    `Incident ID: ${ctx.incident.id}`,
     `Opened: ${ctx.incident.opened_at}`,
-  ].filter(Boolean).join('\n')
+  ]
+    .filter(Boolean)
+    .join('\n')
 
-  try {
-    const res = await fetchWithTimeout(
-      'https://api.resend.com/emails',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${dest.api_key}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: dest.from_name
-            ? `${dest.from_name} <${dest.from_address}>`
-            : dest.from_address,
-          to: [dest.to],
-          subject,
-          text,
-        }),
-      },
-      TIMEOUT_MS
-    )
-    return classify(res.status)
-  } catch {
-    return { ok: false, retryable: true }
-  }
+  const result = await sendSmtpEmail(dest, { subject, text })
+  return result.ok ? { ok: true, retryable: false } : { ok: false, retryable: result.retryable }
 }
 
 export function sendDelivery(ctx: DeliveryContext): Promise<SendResult> {
-  return ctx.route.integration_kind === 'slack_webhook'
-    ? sendSlack(ctx)
-    : sendEmail(ctx)
+  return ctx.route.integration_kind === 'slack_webhook' ? sendSlack(ctx) : sendEmail(ctx)
 }

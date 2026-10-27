@@ -5,6 +5,7 @@
 
 import type { CheckType } from '@yieldcue/contracts'
 import { escapeHtml } from './layout.ts'
+import { renderHtml } from './templates.ts'
 
 export const CHECK_TYPE_LABELS: Record<CheckType, string> = {
   heartbeat: 'Heartbeat',
@@ -98,33 +99,46 @@ export function renderConfigFields(
     .map((field) => {
       const name = `config.${field.key}`
       const value = fieldValue(config, field.key)
-      const hint = field.hint ? `<div class="hint">${escapeHtml(field.hint)}</div>` : ''
+      const hint = field.hint ? renderHtml('config-hint.html', { hint: escapeHtml(field.hint) }) : ''
       if (field.type === 'bool') {
         const checked = config[field.key] === true ? ' checked' : ''
-        return `<div class="field checkbox-row">
-          <input type="checkbox" id="f_${field.key}" name="${name}"${checked}>
-          <label for="f_${field.key}">${escapeHtml(field.label)}</label>
-        </div>`
+        return renderHtml('config-checkbox-field.html', {
+          key: escapeHtml(field.key),
+          name: escapeHtml(name),
+          checked,
+          label: escapeHtml(field.label),
+        })
       }
       if (field.type === 'select') {
         const options = (field.options ?? [])
           .map(
-            ([val, label]) =>
-              `<option value="${escapeHtml(val)}"${val === value ? ' selected' : ''}>${escapeHtml(label)}</option>`
+            ([optionValue, label]) =>
+              renderHtml('option.html', {
+                value: escapeHtml(optionValue),
+                selected: optionValue === value ? ' selected' : '',
+                label: escapeHtml(label),
+              })
           )
           .join('')
-        return `<div class="field">
-          <label for="f_${field.key}">${escapeHtml(field.label)}</label>
-          <select id="f_${field.key}" name="${name}">${options}</select>${hint}
-        </div>`
+        return renderHtml('config-select-field.html', {
+          key: escapeHtml(field.key),
+          name: escapeHtml(name),
+          label: escapeHtml(field.label),
+          options,
+          hint,
+        })
       }
       const inputType = field.type === 'number' ? 'number' : 'text'
       const step = field.step ? ` step="${escapeHtml(field.step)}"` : ''
-      return `<div class="field">
-        <label for="f_${field.key}">${escapeHtml(field.label)}</label>
-        <input id="f_${field.key}" type="${inputType}" name="${name}" value="${escapeHtml(value)}"${step}>
-        ${hint}
-      </div>`
+      return renderHtml('config-input-field.html', {
+        key: escapeHtml(field.key),
+        type: inputType,
+        name: escapeHtml(name),
+        value: escapeHtml(value),
+        step,
+        hint,
+        label: escapeHtml(field.label),
+      })
     })
     .join('')
 }

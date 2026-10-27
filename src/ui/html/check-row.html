@@ -1,0 +1,12 @@
+<tr>
+  <td>{{name}}{{disabled_chip}}</td>
+  <td>{{type}}</td>
+  <td>{{severity}}</td>
+  <td class="small muted">{{config}}</td>
+  <td class="actions">
+    <a class="btn small" href="/workflows/{{workflow_id}}/checks/{{id}}/edit">Edit</a>
+    <form class="inline-form" method="post" action="/workflows/{{workflow_id}}/checks/{{id}}/delete" hx-post="/workflows/{{workflow_id}}/checks/{{id}}/delete" hx-confirm="Delete this check?">
+      <button class="btn small danger" type="submit">Delete</button>
+    </form>
+  </td>
+</tr>

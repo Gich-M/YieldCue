@@ -1,0 +1,17 @@
+<div class="page-head">
+  <div>
+    <h1>{{heading}}</h1>
+    <p class="lede">{{lede}}</p>
+  </div>
+  <a class="btn" href="{{back_href}}">{{back_label}}</a>
+</div>
+<div class="card">
+  {{preamble}}
+  <form method="post" action="{{action}}">
+    {{fields}}
+    <div class="actions">
+      <button class="btn primary" type="submit">{{submit_label}}</button>
+      <a class="btn" href="{{cancel_href}}">Cancel</a>
+    </div>
+  </form>
+</div>

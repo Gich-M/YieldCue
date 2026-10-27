@@ -1,0 +1,33 @@
+<div class="page-head">
+  <div>
+    <h1>Incidents</h1>
+    <p class="lede">Failures grouped by check. Acknowledge, resolve, or ignore from the incident page.</p>
+  </div>
+</div>
+
+<form class="card" method="get" action="/incidents">
+  <div class="form-row">
+    <div class="field">
+      <label for="status">Status</label>
+      <select id="status" name="status" onchange="this.form.requestSubmit()">{{status_options}}</select>
+    </div>
+    <div class="field">
+      <label for="severity">Severity</label>
+      <select id="severity" name="severity" onchange="this.form.requestSubmit()">{{severity_options}}</select>
+    </div>
+    <div class="field">
+      <label for="workflow">Workflow</label>
+      <select id="workflow" name="workflow" onchange="this.form.requestSubmit()">
+        <option value="">All</option>
+        {{workflow_options}}
+      </select>
+    </div>
+    <div class="field filter-actions">
+      <a class="btn" href="/incidents">Clear</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  {{table}}
+</div>

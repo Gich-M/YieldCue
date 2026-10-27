@@ -2,38 +2,97 @@
   <a href="https://yieldcue.com"><img alt="YieldCue" src="assets/logo.png" width="120"></a>
 </p>
 
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
-</p>
+<h1 align="center">Know when a workflow runs but doesn't deliver.</h1>
 
 <div align="center">
-  <strong>Open-source outcome monitoring for business workflows.</strong><br />
-  YieldCue catches the "green but wrong" failures that execution-level monitoring misses - the job ran, reported success, and the business still lost money.<br />
-  One container, one SQLite file, no external services, no telemetry.
+  <strong>
+    <a href="https://yieldcue.com/">YieldCue</a> is open-source outcome monitoring for business workflows.
+    It catches the "green but wrong" failures that execution monitoring misses: a job reports success, but the business gets no result.
+  </strong>
 </div>
 
 <p align="center">
-  <strong>Supported providers:</strong> n8n · Make · Zapier · cron
+  <strong>One container · One SQLite file · No telemetry</strong>
 </p>
+
+<p align="center">
+  <br />
+  <a href="#quick-start"><strong>Self-host YieldCue »</strong></a>
+  <br />
+</p>
+
+<p align="center">
+  <a href="https://yieldcue.com/">YieldCue Cloud</a>
+  ·
+  <a href="#features">Features</a>
+  ·
+  <a href="https://github.com/Gich-M/YieldCue-Cloud/discussions">Discussions</a>
+  ·
+  <a href="#contributing">Contribute</a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0--or--later-blue.svg" alt="License: AGPL-3.0-or-later"></a>
+</p>
+
+<br />
+
+<p align="center"><strong>Works with:</strong></p>
+<p align="center">
+  n8n &nbsp;·&nbsp; Make &nbsp;·&nbsp; Zapier &nbsp;·&nbsp; HubSpot &nbsp;·&nbsp; cron &nbsp;·&nbsp; any HTTP client
+</p>
+
+<br />
 
 ## Why YieldCue?
 
-Error handling catches breakage. YieldCue catches wrongness.
+Execution monitoring tells you whether a workflow ran. YieldCue checks whether it produced the outcome you expected, then gives your team an incident to act on.
 
-- **Execution** - did the job run and exit cleanly?
-- **Result** - did it produce the expected output?
-- **Ownership** - who gets the alert, and with what context?
+| Check | Example |
+|---|---|
+| **Presence** | A heartbeat is missing, or a run produced zero output. |
+| **Volume** | A report contains fewer records than expected, or activity drops below its baseline. |
+| **Correctness** | A status or value does not match the result you expect. |
+| **Freshness** | The data behind a successful run is out of date. |
 
-YieldCue maps these to events, checks, and incidents. It works whether the workflow runs in n8n, Make, Zapier, Airtable, or a cron script.
+Define explicit checks for your workflows. YieldCue evaluates incoming events, groups matching failures into incidents, and routes alerts to Slack or email. Each incident points to the check that failed.
 
 ## Features
 
-- **Eleven check types** - heartbeat, zero output, threshold (min/max), baseline drop/spike, status match, expected value, repeated failure, data freshness, and no-change.
-- **Incident lifecycle** - open, acknowledge, resolve, ignore, and reopen. Incidents dedupe by fingerprint and are archived rather than deleted.
-- **Slack and email alerts** - durable bounded retries (12 attempts) and per-route cooldowns.
-- **Single SQLite file** - WAL mode, atomic migrations on boot.
-- **No telemetry** - the client makes no outbound requests except to your configured alert destinations.
-- **Server-rendered UI** - five screens, HTMX, no React, no bundler, no build step.
+- **Eleven check types** across presence, volume, correctness, and freshness.
+- **Actionable incidents** with evidence and an open, acknowledge, resolve, ignore, and reopen lifecycle. Matching failures are deduplicated.
+- **Slack and email alerts** with bounded retries and per-route cooldowns.
+- **Self-hosted by default** with one SQLite database, WAL mode, and automatic migrations.
+- **No telemetry**. The client makes no outbound requests except to alert destinations you configure.
+- **Simple interface** built with server-rendered HTML and HTMX; no frontend build step.
+
+## Tech Stack
+
+- **Hono** — HTTP framework; one ingest endpoint plus server-rendered UI.
+- **HTMX** — client-side interactivity with no frontend build step.
+- **node:sqlite** — embedded SQLite with WAL mode and automatic migrations.
+- **TypeScript** — run directly via `tsx`; no compilation step.
+- **Docker** — one container, one volume.
+
+## Cloud vs. Open-source
+
+Choose [YieldCue Cloud](https://yieldcue.com/) for a managed experience, or deploy this open-source edition on your own infrastructure.
+
+| Area | YieldCue Cloud | Self-hosted (this repo) |
+|---|---|---|
+| **Cost** | Subscription | Free forever (AGPL-3.0-or-later); you pay only your own infra |
+| **Setup** | Sign up and add workflows in minutes | One Docker container and one SQLite file |
+| **Hosting & data** | Hosted by YieldCue | Runs on your server; data never leaves your environment |
+| **Workflows, checks, incidents** | Managed | Unlimited, bounded only by disk |
+| **Team members** | Per plan | Single `operator` user |
+| **Retention** | Managed | You configure; defaults 90d events, 1y incidents, 180d deliveries |
+| **Updates & maintenance** | Automatic | You pull new images and run migrations yourself |
+| **Backups** | Managed | Your responsibility (copy the data directory) |
+| **Support** | Per plan | Community (GitHub Discussions) |
+| **Source access** | No (SaaS) | Full source; fork and modify under AGPL |
+| **Data residency** | YieldCue-managed regions | Any region or air-gapped environment |
+
+This repository is for operators who want to run YieldCue themselves.
 
 ## Quick start
 
@@ -129,6 +188,14 @@ Use the **HTTP** module's "Make a request" action. Set the URL and headers, then
 
 Use **Webhooks by Zapier** with a POST action to the ingest URL, adding the `Authorization` header and the JSON body.
 
+### HubSpot
+
+Use an **Operations Hub** workflow with a **Send a webhook** action. Set the method to POST, point it at the ingest URL, add an `Authorization` header set to `Bearer $YIELDCUE_INGEST_TOKEN`, and paste the JSON body into the request content. Requires an Operations Hub Professional or Enterprise plan, with custom headers enabled on the webhook action.
+
+### Airtable (via an automation tool)
+
+Airtable has no native outbound webhook. Use a Zapier, Make, or n8n Airtable trigger and send the event from that automation provider, or use an Airtable **Run a script** automation that calls `fetch()` if you own and maintain that script. The payload shape is the same either way.
+
 ### Cron or any shell script
 
 ```bash
@@ -166,6 +233,8 @@ Delivery is at-least-once: a provider timeout or a crash after the provider acce
 | `YIELDCUE_DATA_DIR` | no | `/data` | Directory holding the `yieldcue.sqlite` database. |
 
 There is no configuration file. Alert destinations, cooldowns, and retention take effect without a restart.
+
+Browser sessions are stateless signed cookies that last 14 days. Rotating `YIELDCUE_AUTH_TOKEN` invalidates every active session immediately - the token both signs the session cookie and serves as the sign-in password, so a rotation is also a forced sign-out on all devices.
 
 ## The interface
 
@@ -211,10 +280,19 @@ To migrate configuration to YieldCue Cloud, use **Settings → Prepare for Cloud
 
 To report a security vulnerability, see [SECURITY.md](./SECURITY.md). Do not open a public issue.
 
+## Compliance
+
+- This repository is the open-source, self-hosted edition of YieldCue. [YieldCue Cloud](https://yieldcue.com/) is a separate managed service.
+- YieldCue is provider-agnostic: it only receives events you send to `POST /v1/ingest/events`; it never connects to, scrapes, or automates a third-party workflow provider.
+
+## Community
+
+Questions, ideas, or examples of workflows you monitor with YieldCue? [Join the GitHub Discussions](https://github.com/Gich-M/YieldCue-Cloud/discussions). For reproducible bugs, open an issue in the repository.
+
 ## License
 
-The self-hosted client is licensed under **AGPL-3.0-or-later** (see [LICENSE](./LICENSE)). The vendored shared packages - `@yieldcue/contracts`, `@yieldcue/domain`, and `@yieldcue/notifications` - are licensed under **MIT** (see [vendor/LICENSE](./vendor/LICENSE)).
+The self-hosted client is licensed under **AGPL-3.0-or-later** (see [LICENSE](./LICENSE)). The vendored shared packages - `@yieldcue/contracts`, `@yieldcue/domain`, and `@yieldcue/notifications` - are licensed under **MIT** (see [vendor/LICENSE](./vendor/LICENSE)). The HTMX runtime vendored at `public/htmx.min.js` is licensed under the Zero-Clause BSD license (see [vendor/LICENSE-htmx](./vendor/LICENSE-htmx)).
 
 ## Contributing
 
-Contributions are welcome - see [CONTRIBUTING.md](./CONTRIBUTING.md) and the [Code of Conduct](./CODE_OF_CONDUCT.md). Bug fixes and README corrections are the easiest place to start: open an issue first, then a pull request.
+Contributions are welcome - see [CONTRIBUTING.md](./CONTRIBUTING.md) and the [Code of Conduct](./CODE_OF_CONDUCT.md). Bug fixes and README corrections are a good place to start. For new ideas or check types, [start a discussion](https://github.com/Gich-M/YieldCue-Cloud/discussions) before opening a pull request.

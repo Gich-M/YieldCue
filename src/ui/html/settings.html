@@ -1,0 +1,39 @@
+<div class="page-head">
+  <div>
+    <h1>Settings</h1>
+    <p class="lede">Alert destinations and data for this instance. Tokens stay in the environment, not on this page.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>Alert destinations</h2>
+    <a class="btn primary small" href="/settings/alert-routes/new?kind=slack_webhook">Add destination</a>
+  </div>
+  {{alert_routes}}
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Retention</h2></div>
+  <p class="muted">Applied automatically. These windows are not configurable in the self-hosted client.</p>
+  <dl class="meta">
+    <dt>Events</dt>
+    <dd>90 days</dd>
+    <dt>Incidents</dt>
+    <dd>1 year</dd>
+    <dt>Delivered or failed alerts</dt>
+    <dd>180 days</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Data export</h2></div>
+  <p class="muted">JSON snapshot of workflows, checks, events, and incidents. Notification credentials are omitted. This is not a backup — copy the data directory for that.</p>
+  <a class="btn" href="/export" hx-boost="false">Download data export</a>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Prepare for Cloud</h2></div>
+  <p class="muted">Setup bundle of workflows and checks for import into YieldCue Cloud. History, incidents, and destinations are left out. Review the file before uploading.</p>
+  <a class="btn" href="/settings/prepare-for-cloud" hx-boost="false">Download setup bundle</a>
+</div>

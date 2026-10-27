@@ -1,0 +1,47 @@
+<div class="page-head">
+  <div>
+    <h1>{{name}} {{status_chip}}</h1>
+    <p class="lede">{{description}}</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/workflows/{{id}}/edit">Edit</a>
+    <form class="inline-form" method="post" action="/workflows/{{id}}/delete" hx-post="/workflows/{{id}}/delete" hx-confirm="Delete this workflow and all of its checks, events, and incidents?">
+      <button class="btn danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Details</h2>
+  <dl class="meta">
+    <dt>Workflow key</dt>
+    <dd><code>{{workflow_key}}</code></dd>
+    <dt>Provider</dt>
+    <dd>{{provider}}</dd>
+    <dt>Environment</dt>
+    <dd>{{environment}}</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>Checks</h2>
+    <a class="btn primary small" href="/workflows/{{id}}/checks/new">New check</a>
+  </div>
+  {{checks}}
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>Recent incidents</h2>
+    <a class="btn small" href="/incidents?workflow={{id}}">View all</a>
+  </div>
+  {{incidents}}
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>Recent events</h2>
+  </div>
+  {{events}}
+</div>

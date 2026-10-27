@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{title}} · YieldCue</title>
+    <link rel="icon" type="image/svg+xml" href="/static/app-icon.svg">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+      document.documentElement.setAttribute(
+        'data-theme',
+        localStorage.getItem('yieldcue-theme') === 'light' ? 'light' : 'dark'
+      )
+    </script>
+    <script src="/static/htmx.min.js" defer></script>
+    <script src="/static/theme.js" defer></script>
+  </head>
+  <body hx-boost="true">
+    <div class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="/workflows">
+          <img src="/static/app-icon.svg" alt="">
+          YieldCue
+        </a>
+
+        <div>
+          <div class="sidebar-label">Monitor</div>
+          <nav class="nav">
+            <a href="/workflows" class="{{nav_workflows}}">
+              <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/>
+                  <rect width="8" height="8" x="13" y="13" rx="2"/>
+                </svg>
+              </span>
+              Workflows
+            </a>
+            <a href="/incidents" class="{{nav_incidents}}">
+              <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+                  <path d="M12 8v4"/><path d="M12 16h.01"/>
+                </svg>
+              </span>
+              Incidents
+            </a>
+          </nav>
+        </div>
+
+        <div>
+          <div class="sidebar-label">Configure</div>
+          <nav class="nav">
+            <a href="/settings" class="{{nav_settings}}">
+              <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1.1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+                </svg>
+              </span>
+              Settings
+            </a>
+          </nav>
+        </div>
+
+        <div class="sidebar-foot">
+          <div class="edition">Self-hosted</div>
+          <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch to light theme" title="Switch theme">
+            <svg class="theme-icon theme-icon-sun" data-theme-icon="sun" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>
+            </svg>
+            <svg class="theme-icon theme-icon-moon" data-theme-icon="moon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.9 13A8.5 8.5 0 0 1 11 3.1 8.5 8.5 0 1 0 20.9 13Z"/>
+            </svg>
+          </button>
+          <form method="post" action="/logout" class="logout-form">
+            <button type="submit" class="sign-out">Sign out</button>
+          </form>
+        </div>
+      </aside>
+
+      <main class="container">
+        {{flash}}
+        {{content}}
+      </main>
+    </div>
+  </body>
+</html>
