@@ -11,7 +11,7 @@ Thanks for your interest in contributing. YieldCue is maintainer-led: the mainta
 
 ## Ground rules
 
-- The `@yieldcue/contracts` and `@yieldcue/domain` packages are synced from the private monorepo. External pull requests to these packages are reviewed but landed upstream first and synced out.
+- The `@yieldcue/contracts`, `@yieldcue/domain`, and `@yieldcue/notifications` packages are synced from the private monorepo. External pull requests to these packages are reviewed but landed upstream first and synced out.
 - Contributions remain under the license of the package they modify. There is no CLA and no separate relicensing grant.
 - Respect the client's constraints: no outbound requests except configured alert destinations, no telemetry, and all rendered user data escaped.
 
