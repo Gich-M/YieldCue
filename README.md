@@ -26,7 +26,7 @@
   ·
   <a href="#features">Features</a>
   ·
-  <a href="https://github.com/Gich-M/YieldCue-Cloud/discussions">Discussions</a>
+  <a href="https://github.com/Gich-M/YieldCue/discussions">Discussions</a>
   ·
   <a href="#contributing">Contribute</a>
 </p>
@@ -98,14 +98,19 @@ This repository is for operators who want to run YieldCue themselves.
 
 ### 1. Run the container
 
+Generate the two tokens and save them somewhere safe before starting the container - they are your sign-in credentials.
+
 ```bash
-docker build -t yieldcue apps/self-hosted
+export YIELDCUE_AUTH_TOKEN="$(openssl rand -hex 32)"
+export YIELDCUE_INGEST_TOKEN="$(openssl rand -hex 32)"
+
+docker build -t yieldcue .
 
 docker run -d --name yieldcue \
   -p 8080:8080 \
   -v yieldcue-data:/data \
-  -e YIELDCUE_AUTH_TOKEN="$(openssl rand -hex 32)" \
-  -e YIELDCUE_INGEST_TOKEN="$(openssl rand -hex 32)" \
+  -e YIELDCUE_AUTH_TOKEN="$YIELDCUE_AUTH_TOKEN" \
+  -e YIELDCUE_INGEST_TOKEN="$YIELDCUE_INGEST_TOKEN" \
   yieldcue
 ```
 
@@ -113,7 +118,7 @@ docker run -d --name yieldcue \
 
 ### 2. Create a workflow
 
-Open `http://localhost:8080` and sign in with username `operator` and the value of `YIELDCUE_AUTH_TOKEN` as the password. Create a workflow and note its `workflow_key`.
+Open `http://localhost:8080` and sign in with username `operator` and the value of `YIELDCUE_AUTH_TOKEN` as the password. If you exported the tokens in step 1, print the password with `echo "$YIELDCUE_AUTH_TOKEN"`. If you started the container without saving it, retrieve it with `docker exec yieldcue printenv YIELDCUE_AUTH_TOKEN`. Create a workflow and note its `workflow_key`.
 
 ### 3. Send your first event
 
@@ -287,7 +292,7 @@ To report a security vulnerability, see [SECURITY.md](./SECURITY.md). Do not ope
 
 ## Community
 
-Questions, ideas, or examples of workflows you monitor with YieldCue? [Join the GitHub Discussions](https://github.com/Gich-M/YieldCue-Cloud/discussions). For reproducible bugs, open an issue in the repository.
+Questions, ideas, or examples of workflows you monitor with YieldCue? [Join the GitHub Discussions](https://github.com/Gich-M/YieldCue/discussions). For reproducible bugs, open an issue in the repository.
 
 ## License
 
@@ -295,4 +300,4 @@ The self-hosted client is licensed under **AGPL-3.0-or-later** (see [LICENSE](./
 
 ## Contributing
 
-Contributions are welcome - see [CONTRIBUTING.md](./CONTRIBUTING.md) and the [Code of Conduct](./CODE_OF_CONDUCT.md). Bug fixes and README corrections are a good place to start. For new ideas or check types, [start a discussion](https://github.com/Gich-M/YieldCue-Cloud/discussions) before opening a pull request.
+Contributions are welcome - see [CONTRIBUTING.md](./CONTRIBUTING.md) and the [Code of Conduct](./CODE_OF_CONDUCT.md). Bug fixes and README corrections are a good place to start. For new ideas or check types, [start a discussion](https://github.com/Gich-M/YieldCue/discussions) before opening a pull request.

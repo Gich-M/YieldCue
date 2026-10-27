@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # YieldCue self-hosted client. One runnable image, no operator build step.
-# Build context is apps/self-hosted/ (the client subtree with vendored packages).
+# Build context is the repository root (with vendored packages under vendor/).
 
 FROM node:22-slim
 

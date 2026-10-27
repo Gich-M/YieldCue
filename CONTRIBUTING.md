@@ -32,3 +32,5 @@ export YIELDCUE_AUTH_TOKEN="$(openssl rand -hex 32)"
 export YIELDCUE_INGEST_TOKEN="$(openssl rand -hex 32)"
 npm run dev
 ```
+
+Open `http://localhost:8080` and sign in as `operator` with `YIELDCUE_AUTH_TOKEN` as the password. Print it with `echo "$YIELDCUE_AUTH_TOKEN"` - the tokens are regenerated on each run, so save them before restarting the server.
