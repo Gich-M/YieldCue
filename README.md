@@ -39,10 +39,10 @@
 
 <p align="center"><strong>Works with:</strong></p>
 <div align="center">
-  <img alt="n8n" src="https://cdn.simpleicons.org/n8n" width="32">
-  <img alt="Make" src="https://cdn.simpleicons.org/make" width="32">
-  <img alt="Zapier" src="https://cdn.simpleicons.org/zapier" width="32">
-  <img alt="HubSpot" src="https://cdn.simpleicons.org/hubspot" width="32">
+  <a href="https://app.n8n.cloud/" title="n8n"><img alt="n8n" src="https://cdn.simpleicons.org/n8n" width="32"></a>&nbsp;&nbsp;
+  <a href="https://www.make.com/en/login" title="Make"><img alt="Make" src="https://cdn.simpleicons.org/make" width="32"></a>&nbsp;&nbsp;
+  <a href="https://zapier.com/app/login" title="Zapier"><img alt="Zapier" src="https://cdn.simpleicons.org/zapier" width="32"></a>&nbsp;&nbsp;
+  <a href="https://app.hubspot.com/login" title="HubSpot"><img alt="HubSpot" src="https://cdn.simpleicons.org/hubspot" width="32"></a>
 </div>
 
 <br />
