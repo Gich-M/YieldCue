@@ -43,7 +43,6 @@
   <img alt="Make" src="https://cdn.simpleicons.org/make" width="32">
   <img alt="Zapier" src="https://cdn.simpleicons.org/zapier" width="32">
   <img alt="HubSpot" src="https://cdn.simpleicons.org/hubspot" width="32">
-  <img alt="cron" src="https://api.iconify.design/heroicons-outline/clock.svg?color=%234B5563" width="32">
 </div>
 
 <br />
