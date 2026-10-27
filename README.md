@@ -38,9 +38,13 @@
 <br />
 
 <p align="center"><strong>Works with:</strong></p>
-<p align="center">
-  n8n &nbsp;·&nbsp; Make &nbsp;·&nbsp; Zapier &nbsp;·&nbsp; HubSpot &nbsp;·&nbsp; cron &nbsp;·&nbsp; any HTTP client
-</p>
+<div align="center">
+  <img alt="n8n" src="https://cdn.simpleicons.org/n8n" width="32">
+  <img alt="Make" src="https://cdn.simpleicons.org/make" width="32">
+  <img alt="Zapier" src="https://cdn.simpleicons.org/zapier" width="32">
+  <img alt="HubSpot" src="https://cdn.simpleicons.org/hubspot" width="32">
+  <img alt="cron" src="https://api.iconify.design/heroicons-outline/clock.svg?color=%234B5563" width="32">
+</div>
 
 <br />
 
