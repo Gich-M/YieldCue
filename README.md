@@ -71,11 +71,11 @@ Define explicit checks for your workflows. YieldCue evaluates incoming events, g
 
 ## Tech Stack
 
-- **Hono** — HTTP framework; one ingest endpoint plus server-rendered UI.
-- **HTMX** — client-side interactivity with no frontend build step.
-- **node:sqlite** — embedded SQLite with WAL mode and automatic migrations.
-- **TypeScript** — run directly via `tsx`; no compilation step.
-- **Docker** — one container, one volume.
+- **Hono** - HTTP framework; one ingest endpoint plus server-rendered UI.
+- **HTMX** - client-side interactivity with no frontend build step.
+- **node:sqlite** - embedded SQLite with WAL mode and automatic migrations.
+- **TypeScript** - run directly via `tsx`; no compilation step.
+- **Docker** - one container, one volume.
 
 ## Cloud vs. Open-source
 
