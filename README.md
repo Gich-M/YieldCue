@@ -1,37 +1,39 @@
 <p align="center">
-  <img alt="YieldCue" src="assets/logo.png" width="120">
+  <a href="https://yieldcue.com"><img alt="YieldCue" src="assets/logo.png" width="120"></a>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
-  <img src="https://img.shields.io/badge/Node.js-22-339933" alt="Node.js 22">
-  <img src="https://img.shields.io/badge/TypeScript-6.0-3178c6" alt="TypeScript 6.0">
 </p>
 
 <div align="center">
   <strong>Open-source outcome monitoring for business workflows.</strong><br />
-  YieldCue catches the "green but wrong" failures that execution-level monitoring misses — the job ran, reported success, and the business still lost money.<br />
+  YieldCue catches the "green but wrong" failures that execution-level monitoring misses - the job ran, reported success, and the business still lost money.<br />
   One container, one SQLite file, no external services, no telemetry.
 </div>
+
+<p align="center">
+  <strong>Supported providers:</strong> n8n · Make · Zapier · cron
+</p>
 
 ## Why YieldCue?
 
 Error handling catches breakage. YieldCue catches wrongness.
 
-- **Execution** — did the job run and exit cleanly?
-- **Result** — did it produce the expected output?
-- **Ownership** — who gets the alert, and with what context?
+- **Execution** - did the job run and exit cleanly?
+- **Result** - did it produce the expected output?
+- **Ownership** - who gets the alert, and with what context?
 
 YieldCue maps these to events, checks, and incidents. It works whether the workflow runs in n8n, Make, Zapier, Airtable, or a cron script.
 
 ## Features
 
-- **Eleven check types** — heartbeat, zero output, threshold (min/max), baseline drop/spike, status match, expected value, repeated failure, data freshness, and no-change.
-- **Incident lifecycle** — open, acknowledge, resolve, ignore, and reopen. Incidents dedupe by fingerprint and are archived rather than deleted.
-- **Slack and email alerts** — durable bounded retries (12 attempts) and per-route cooldowns.
-- **Single SQLite file** — WAL mode, atomic migrations on boot.
-- **No telemetry** — the client makes no outbound requests except to your configured alert destinations.
-- **Server-rendered UI** — five screens, HTMX, no React, no bundler, no build step.
+- **Eleven check types** - heartbeat, zero output, threshold (min/max), baseline drop/spike, status match, expected value, repeated failure, data freshness, and no-change.
+- **Incident lifecycle** - open, acknowledge, resolve, ignore, and reopen. Incidents dedupe by fingerprint and are archived rather than deleted.
+- **Slack and email alerts** - durable bounded retries (12 attempts) and per-route cooldowns.
+- **Single SQLite file** - WAL mode, atomic migrations on boot.
+- **No telemetry** - the client makes no outbound requests except to your configured alert destinations.
+- **Server-rendered UI** - five screens, HTMX, no React, no bundler, no build step.
 
 ## Quick start
 
@@ -73,7 +75,7 @@ The response is `202 Accepted`. Attach a heartbeat check to the workflow and Yie
 
 ## Sending events
 
-Events are posted to `POST /v1/ingest/events` with `Authorization: Bearer $YIELDCUE_INGEST_TOKEN`. The ingest token grants event ingest only — it cannot read the UI, change configuration, or run exports.
+Events are posted to `POST /v1/ingest/events` with `Authorization: Bearer $YIELDCUE_INGEST_TOKEN`. The ingest token grants event ingest only - it cannot read the UI, change configuration, or run exports.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -148,8 +150,8 @@ curl -fsS -X POST http://localhost:8080/v1/ingest/events \
 
 Configure destinations in **Settings**. Two integrations are supported:
 
-- **Slack** — a Slack incoming webhook URL.
-- **Email** — SMTP server credentials.
+- **Slack** - a Slack incoming webhook URL.
+- **Email** - SMTP server credentials.
 
 Delivery is at-least-once: a provider timeout or a crash after the provider accepts a notification can produce a duplicate. Retryable failures (network errors, timeouts, `429`, and `5xx`) are retried up to a total of 12 attempts; other `4xx` responses are terminal.
 
@@ -157,8 +159,8 @@ Delivery is at-least-once: a provider timeout or a crash after the provider acce
 
 | Variable | Required | Default | Description |
 |---|---:|---|---|
-| `YIELDCUE_AUTH_TOKEN` | yes | — | UI password for the `operator` user. At least 32 bytes. |
-| `YIELDCUE_INGEST_TOKEN` | yes | — | Ingest bearer token. At least 32 bytes; must differ from `YIELDCUE_AUTH_TOKEN`. |
+| `YIELDCUE_AUTH_TOKEN` | yes | - | UI password for the `operator` user. At least 32 bytes. |
+| `YIELDCUE_INGEST_TOKEN` | yes | - | Ingest bearer token. At least 32 bytes; must differ from `YIELDCUE_AUTH_TOKEN`. |
 | `YIELDCUE_PORT` | no | `8080` | HTTP listen port. |
 | `YIELDCUE_BIND` | no | `127.0.0.1` | Listen address. |
 | `YIELDCUE_DATA_DIR` | no | `/data` | Directory holding the `yieldcue.sqlite` database. |
@@ -169,11 +171,11 @@ There is no configuration file. Alert destinations, cooldowns, and retention tak
 
 The UI is server-rendered HTML with HTMX. It has five screens:
 
-- **Workflows** — list and manage workflows.
-- **Workflow detail** — edit a workflow and its checks.
-- **Incidents** — list open and resolved incidents.
-- **Incident detail** — view history, acknowledge, resolve, ignore, or reopen.
-- **Settings** — alert destinations, export, and Prepare for Cloud.
+- **Workflows** - list and manage workflows.
+- **Workflow detail** - edit a workflow and its checks.
+- **Incidents** - list open and resolved incidents.
+- **Incident detail** - view history, acknowledge, resolve, ignore, or reopen.
+- **Settings** - alert destinations, export, and Prepare for Cloud.
 
 ## Data and retention
 
@@ -197,9 +199,9 @@ To restore, stop the container, replace the data directory with the backup, and 
 
 ## Export and cloud migration
 
-`GET /export` (behind the UI login) returns a full JSON snapshot — workflows, checks, events, and incidents. It omits notification credentials and secret values. The snapshot is data portability, not a backup and not a cloud migration file.
+`GET /export` (behind the UI login) returns a full JSON snapshot - workflows, checks, events, and incidents. It omits notification credentials and secret values. The snapshot is data portability, not a backup and not a cloud migration file.
 
-To migrate configuration to YieldCue Cloud, use **Settings → Prepare for Cloud**. This downloads a versioned setup bundle containing workflows and checks only — no event history, incidents, alert destinations, or credentials. Review the bundle before uploading it, and re-verify that alerts work in the cloud after import.
+To migrate configuration to YieldCue Cloud, use **Settings → Prepare for Cloud**. This downloads a versioned setup bundle containing workflows and checks only - no event history, incidents, alert destinations, or credentials. Review the bundle before uploading it, and re-verify that alerts work in the cloud after import.
 
 ## Security
 
@@ -211,8 +213,8 @@ To report a security vulnerability, see [SECURITY.md](./SECURITY.md). Do not ope
 
 ## License
 
-The self-hosted client is licensed under **AGPL-3.0-or-later** (see [LICENSE](./LICENSE)). The vendored shared packages — `@yieldcue/contracts`, `@yieldcue/domain`, and `@yieldcue/notifications` — are licensed under **MIT** (see [vendor/LICENSE](./vendor/LICENSE)). Third-party notices are in [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+The self-hosted client is licensed under **AGPL-3.0-or-later** (see [LICENSE](./LICENSE)). The vendored shared packages - `@yieldcue/contracts`, `@yieldcue/domain`, and `@yieldcue/notifications` - are licensed under **MIT** (see [vendor/LICENSE](./vendor/LICENSE)).
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) and the [Code of Conduct](./CODE_OF_CONDUCT.md). Bug fixes and README corrections are the easiest place to start: open an issue first, then a pull request.
+Contributions are welcome - see [CONTRIBUTING.md](./CONTRIBUTING.md) and the [Code of Conduct](./CODE_OF_CONDUCT.md). Bug fixes and README corrections are the easiest place to start: open an issue first, then a pull request.
