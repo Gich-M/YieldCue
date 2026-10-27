@@ -4,10 +4,10 @@ Thanks for your interest in contributing. YieldCue is maintainer-led: the mainta
 
 ## What's welcome
 
-- **Bug fixes** — open an issue first, then a pull request.
-- **README corrections and examples** — welcome.
-- **New check types** — open a discussion first, and include test cases.
-- **Core architecture and UI changes** — discuss first; these are usually deferred in favor of cloud-track features.
+- **Bug fixes** - open an issue first, then a pull request.
+- **README corrections and examples** - welcome.
+- **New check types** - open a discussion first, and include test cases.
+- **Core architecture and UI changes** - discuss first; these are usually deferred in favor of cloud-track features.
 
 ## Ground rules
 
