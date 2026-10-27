@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="YieldCue" src="assets/logo.png" width="200">
+  <img alt="YieldCue" src="assets/logo.png" width="120">
 </p>
 
 <p align="center">
