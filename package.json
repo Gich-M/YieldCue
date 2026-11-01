@@ -21,12 +21,12 @@
     "@yieldcue/contracts": "*",
     "@yieldcue/domain": "*",
     "@yieldcue/notifications": "*",
-    "hono": "^4.13.14",
-    "tsx": "^4.22.3"
+    "hono": "^4.13.16",
+    "tsx": "^4.23.15"
   },
   "devDependencies": {
-    "@types/node": "^25.9.2",
-    "eslint": "^9.39.4",
-    "typescript": "^6.0.3"
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "typescript": "^7.0.2"
   }
 }
