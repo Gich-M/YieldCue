@@ -99,7 +99,7 @@ This repository is for operators who want to run YieldCue themselves.
 
 ## Quick start
 
-### 1. Run the container
+### 1. Pull and run the container
 
 Generate the two tokens and save them somewhere safe before starting the container - they are your sign-in credentials.
 
@@ -107,15 +107,15 @@ Generate the two tokens and save them somewhere safe before starting the contain
 export YIELDCUE_AUTH_TOKEN="$(openssl rand -hex 32)"
 export YIELDCUE_INGEST_TOKEN="$(openssl rand -hex 32)"
 
-docker build -t yieldcue .
-
 docker run -d --name yieldcue \
   -p 8080:8080 \
   -v yieldcue-data:/data \
   -e YIELDCUE_AUTH_TOKEN="$YIELDCUE_AUTH_TOKEN" \
   -e YIELDCUE_INGEST_TOKEN="$YIELDCUE_INGEST_TOKEN" \
-  yieldcue
+  ghcr.io/gich-m/yieldcue:latest
 ```
+
+`docker run` pulls `ghcr.io/gich-m/yieldcue:latest` automatically. To build the image from source instead, clone the repository and run `docker build -t yieldcue .`.
 
 `YIELDCUE_AUTH_TOKEN` and `YIELDCUE_INGEST_TOKEN` must each be at least 32 bytes and must differ. The client refuses to start serving otherwise.
 
