@@ -108,7 +108,7 @@ export YIELDCUE_AUTH_TOKEN="$(openssl rand -hex 32)"
 export YIELDCUE_INGEST_TOKEN="$(openssl rand -hex 32)"
 
 docker run -d --name yieldcue \
-  -p 8080:8080 \
+  -p 127.0.0.1:8080:8080 \
   -v yieldcue-data:/data \
   -e YIELDCUE_AUTH_TOKEN="$YIELDCUE_AUTH_TOKEN" \
   -e YIELDCUE_INGEST_TOKEN="$YIELDCUE_INGEST_TOKEN" \
@@ -237,7 +237,7 @@ Delivery is at-least-once: a provider timeout or a crash after the provider acce
 | `YIELDCUE_AUTH_TOKEN` | yes | - | UI password for the `operator` user. At least 32 bytes. |
 | `YIELDCUE_INGEST_TOKEN` | yes | - | Ingest bearer token. At least 32 bytes; must differ from `YIELDCUE_AUTH_TOKEN`. |
 | `YIELDCUE_PORT` | no | `8080` | HTTP listen port. |
-| `YIELDCUE_BIND` | no | `127.0.0.1` | Listen address. |
+| `YIELDCUE_BIND` | no | `127.0.0.1` | Listen address. The Docker image overrides this to `0.0.0.0` so Docker port publishing can reach the app. |
 | `YIELDCUE_DATA_DIR` | no | `/data` | Directory holding the `yieldcue.sqlite` database. |
 
 There is no configuration file. Alert destinations, cooldowns, and retention take effect without a restart.
@@ -283,7 +283,7 @@ To migrate configuration to YieldCue Cloud, use **Settings → Prepare for Cloud
 ## Security
 
 - **No telemetry.** The client makes no outbound requests except to your configured alert destinations. There are no analytics, no hidden endpoints, and no phone-home.
-- **TLS is your responsibility.** The client does not terminate TLS. The default bind (`127.0.0.1`) exposes nothing to the network. A non-loopback `YIELDCUE_BIND` is an explicit opt-in; set it only behind a TLS-terminating reverse proxy.
+- **TLS is your responsibility.** The client does not terminate TLS. The app defaults to `127.0.0.1`; the Docker image binds to `0.0.0.0` inside the container so published ports work. The quick start publishes only on host loopback; if you change the host address in `-p`, protect access with a TLS-terminating reverse proxy.
 - **Credential storage.** Notification credentials are stored unencrypted in the local SQLite database and its backups; restrict access to both.
 
 To report a security vulnerability, see [SECURITY.md](./SECURITY.md). Do not open a public issue.

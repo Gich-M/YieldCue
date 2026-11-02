@@ -2,7 +2,7 @@
 # YieldCue self-hosted client. One runnable image, no operator build step.
 # Build context is the repository root (with vendored packages under vendor/).
 
-FROM node:22-slim
+FROM node:24-slim
 
 ENV NODE_ENV=production
 WORKDIR /app
@@ -19,7 +19,7 @@ COPY migrations ./migrations
 COPY public ./public
 
 ENV YIELDCUE_DATA_DIR=/data \
-    YIELDCUE_BIND=127.0.0.1 \
+    YIELDCUE_BIND=0.0.0.0 \
     YIELDCUE_PORT=8080
 
 EXPOSE 8080
