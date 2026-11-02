@@ -119,9 +119,11 @@ docker run -d --name yieldcue \
 
 `YIELDCUE_AUTH_TOKEN` and `YIELDCUE_INGEST_TOKEN` must each be at least 32 bytes and must differ. The client refuses to start serving otherwise.
 
+You will need `YIELDCUE_AUTH_TOKEN` to sign in. If you exported the tokens above, print it with `echo "$YIELDCUE_AUTH_TOKEN"`. If you started the container without saving the token, retrieve it with `docker exec yieldcue printenv YIELDCUE_AUTH_TOKEN`.
+
 ### 2. Create a workflow
 
-Open `http://localhost:8080` and sign in with username `operator` and the value of `YIELDCUE_AUTH_TOKEN` as the password. If you exported the tokens in step 1, print the password with `echo "$YIELDCUE_AUTH_TOKEN"`. If you started the container without saving it, retrieve it with `docker exec yieldcue printenv YIELDCUE_AUTH_TOKEN`. Create a workflow and note its `workflow_key`.
+Open `http://localhost:8080` and sign in with username `operator` and the `YIELDCUE_AUTH_TOKEN` from step 1 as the password. Create a workflow and note its `workflow_key`.
 
 ### 3. Send your first event
 
