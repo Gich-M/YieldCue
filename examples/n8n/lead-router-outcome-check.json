@@ -1,0 +1,288 @@
+{
+  "name": "Lead Router - green but wrong (YieldCue demo)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Demo switch\nIn **Sample Apollo Export**, set `RENAME_COLUMNS = true` to simulate Apollo renaming two columns (`role` and `company_size`).\n\nThe run stays **green**, contacts are still created, but **no lead is routed**. YieldCue catches it with a volume check on `routed_count`.",
+        "height": 220,
+        "width": 460,
+        "color": 4
+      },
+      "id": "9a26dcef-0720-4b88-b653-58603cc0b0af",
+      "name": "Note - demo switch",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## CRM stand-in\nReplace **CRM Upsert** with the real HubSpot node (Create or Update contact). **Aggregate Outcomes** only needs an `id` on each success item.\n\nIf you rename the node, update the name used in **Aggregate Outcomes**.",
+        "height": 220,
+        "width": 380,
+        "color": 4
+      },
+      "id": "0e8b8941-f479-4923-9f58-9228befef642",
+      "name": "Note - CRM stand-in",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        660,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## YieldCue setup\n1. In n8n create a **Header Auth** credential: Name `Authorization`, Value `Bearer <YIELDCUE_INGEST_TOKEN>`.\n2. Select it on **Send YieldCue Signal**.\n3. In YieldCue create a workflow with key `lead-router` and add a volume check on `routed_count`.\n\nThe URL assumes n8n and YieldCue share a Docker network. n8n Cloud needs a public HTTPS URL for YieldCue.",
+        "height": 260,
+        "width": 520,
+        "color": 7
+      },
+      "id": "1245f543-d4ac-4f26-8f3e-948ce6a577a6",
+      "name": "Note - YieldCue setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        330
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "2952bdec-a2cd-483b-9e54-d08338107bef",
+      "name": "Run Lead Import",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fictional sample data standing in for an Apollo CSV export.\n// Set RENAME_COLUMNS to true to simulate Apollo renaming two columns:\n//   role -> job_title, company_size -> employee_count\nconst RENAME_COLUMNS = false;\n\nconst leads = [\n  { first_name: 'Amara',  last_name: 'Okafor',  email: 'amara.okafor@example.com',  company: 'Brightline Logistics', company_size: '50-200', role: 'Ops',        seniority: 'Manager',  city: 'Lagos',     country: 'Nigeria',     industry: 'Logistics',  pain_point: 'Manual dispatch reports' },\n  { first_name: 'Liam',   last_name: 'Chen',    email: 'liam.chen@example.com',     company: 'Northwind Studio',     company_size: '1-10',   role: 'Founder',    seniority: 'Founder',  city: 'Toronto',   country: 'Canada',      industry: 'Design',     pain_point: 'Client onboarding takes too long' },\n  { first_name: 'Sofia',  last_name: 'Alvarez', email: 'sofia.alvarez@example.com', company: 'Kestrel Health',       company_size: '200+',   role: 'Marketing',  seniority: 'Director', city: 'Madrid',    country: 'Spain',       industry: 'Healthcare', pain_point: 'Leads go stale in the CRM' },\n  { first_name: 'Daniel', last_name: 'Mwangi',  email: 'daniel.mwangi@example.com', company: 'Tidewater Labs',       company_size: '11-50',  role: 'RevOps',     seniority: 'Lead',     city: 'Nairobi',   country: 'Kenya',       industry: 'SaaS',       pain_point: 'Lead routing is manual' },\n  { first_name: 'Priya',  last_name: 'Nair',    email: 'priya.nair@example.com',    company: 'Quarry Software',      company_size: '50-200', role: 'Engineering', seniority: 'VP',      city: 'Bengaluru', country: 'India',       industry: 'SaaS',       pain_point: 'No view of failed syncs' },\n  { first_name: 'Tom',    last_name: 'Becker',  email: 'tom.becker@example.com',    company: 'Lumen Retail',         company_size: '11-50',  role: 'Automation', seniority: 'Manager',  city: 'Berlin',    country: 'Germany',     industry: 'Retail',     pain_point: 'Automations fail silently' },\n  { first_name: 'Hannah', last_name: 'Schmidt', email: 'hannah.schmidt@example.com', company: 'Orchard Foods',       company_size: '1-10',   role: 'Sales',      seniority: 'Rep',      city: 'Vienna',    country: 'Austria',     industry: 'Food',       pain_point: 'Spreadsheet follow-ups' },\n  { first_name: 'Jamal',  last_name: 'Carter',  email: 'jamal.carter@example.com',  company: 'Pinecrest Media',      company_size: '11-50',  role: 'Marketing',  seniority: 'Manager',  city: 'Austin',    country: 'USA',         industry: 'Media',      pain_point: 'Campaign reporting delays' },\n  { first_name: 'Elena',  last_name: 'Petrova', email: 'elena.petrova@example.com', company: 'Bluefin Partners',     company_size: '1-10',   role: 'Finance',    seniority: 'Analyst',  city: 'Sofia',     country: 'Bulgaria',    industry: 'Finance',    pain_point: 'Invoice reconciliation' },\n  { first_name: 'Noah',   last_name: 'Kim',     email: 'noah.kim@example.com',      company: 'Harbor & Vale',        company_size: '11-50',  role: 'Design',     seniority: 'Lead',     city: 'Seoul',     country: 'South Korea', industry: 'Agency',     pain_point: 'Handoff between tools' },\n];\n\nreturn leads.map(lead => {\n  if (!RENAME_COLUMNS) return { json: lead };\n  const { role, company_size, ...rest } = lead;\n  return { json: { ...rest, job_title: role, employee_count: company_size } };\n});"
+      },
+      "id": "90193a28-31eb-40b1-a065-6f6164d3227d",
+      "name": "Sample Apollo Export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const full_name = $json.first_name + \" \" + $json.last_name;\nconst sizeQualified = [\"50-200\", \"200+\"].includes($json.company_size);\nconst roleQualified = [\"Founder\", \"RevOps\", \"Ops\", \"Automation\"].includes($json.role);\nconst qualified = sizeQualified || roleQualified;\nconst owner_email = qualified ? \"owner@example.com\" : \"\";\nconst routed = owner_email !== \"\";\n\nreturn {\n  json: {\n    ...$json,\n    full_name,\n    qualified,\n    owner_email,\n    routed\n  }\n};"
+      },
+      "id": "7cf909cc-ffcc-46ea-b0e9-0b8eb497bd37",
+      "name": "Qualify Each Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Stand-in for the HubSpot \"Create or Update contact\" node.\n// Replace this node with the real one. \"Aggregate Outcomes\" only needs\n// an `id` on every item that was created or updated successfully.\nreturn { json: { ...$json, id: 'sim-' + $json.email } };"
+      },
+      "id": "389460db-71f3-4a6c-94ae-b62fb7f90673",
+      "name": "CRM Upsert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dc937c17-7695-476a-9acf-175e11cc5c34",
+              "leftValue": "={{ $('Qualify Each Lead').item.json.owner_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9995c93e-29dc-4027-bcdf-8bcb600f9fd2",
+      "name": "Has Owner",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const esc = s => String(s ?? '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;')\n  .replace(/\"/g, '&quot;');\n\nconst leads = $('Qualify Each Lead').all().map(i => i.json).filter(l => l.routed === true);\nconst count = leads.length;\nconst to = (leads[0] && leads[0].owner_email) ? leads[0].owner_email : 'owner@example.com';\nconst plural = count === 1 ? '' : 's';\nconst subject = count + ' new qualified lead' + plural + ' - sample batch';\n\nconst cell = 'padding:8px;border-bottom:1px solid #eee;font-size:14px;vertical-align:top;';\nconst head = 'text-align:left;padding:8px;border-bottom:2px solid #333;font-size:12px;text-transform:uppercase;color:#555;';\n\nlet rows = '';\nfor (const l of leads) {\n  rows += '<tr>'\n    + '<td style=\"' + cell + '\">' + esc(l.full_name) + '</td>'\n    + '<td style=\"' + cell + '\">' + esc(l.company) + ' (' + esc(l.company_size) + ')</td>'\n    + '<td style=\"' + cell + '\">' + esc(l.role) + ' - ' + esc(l.seniority) + '</td>'\n    + '<td style=\"' + cell + '\">' + esc(l.city) + ', ' + esc(l.country) + '</td>'\n    + '<td style=\"' + cell + '\">' + esc(l.email) + '</td>'\n    + '<td style=\"' + cell + '\">' + esc(l.pain_point) + '</td>'\n    + '</tr>';\n}\n\nconst html = '<div style=\"font-family:Arial,Helvetica,sans-serif;color:#222;\">'\n  + '<h2 style=\"margin:0 0 4px;\">' + count + ' new qualified lead' + plural + '</h2>'\n  + '<p style=\"margin:0 0 16px;color:#666;font-size:13px;\">Sample batch - routed to ' + esc(to) + '</p>'\n  + '<table style=\"border-collapse:collapse;width:100%;\">'\n  + '<thead><tr>'\n  + '<th style=\"' + head + '\">Name</th>'\n  + '<th style=\"' + head + '\">Company</th>'\n  + '<th style=\"' + head + '\">Role</th>'\n  + '<th style=\"' + head + '\">Location</th>'\n  + '<th style=\"' + head + '\">Email</th>'\n  + '<th style=\"' + head + '\">Pain point</th>'\n  + '</tr></thead><tbody>' + rows + '</tbody></table></div>';\n\nreturn [{ json: { from: 'leads@example.com', to: to, subject: subject, html: html } }];"
+      },
+      "id": "fcbb5177-9bb6-4dac-98bc-b707f8a370fe",
+      "name": "Build Digest Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -16
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9f56f725-a493-45c8-8b20-1b029b005819",
+      "name": "Send Digest (placeholder)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Proof of outcome: what did this run actually achieve?\nconst allLeads = $('Qualify Each Lead').all();\nconst allCrm = $('CRM Upsert').all();\n\nconst leads_in = allLeads.length;\nconst routed_count = allLeads.filter(i => i.json.routed === true).length;\nconst no_owner_count = leads_in - routed_count;\nconst contact_created_count = allCrm.filter(i => i.json && (i.json.id || i.json.vid)).length;\nconst error_count = allCrm.filter(i => i.json && (i.json.error != null || i.json.status === 'error')).length;\n\nconst execId = (typeof $execution !== 'undefined' && $execution.id) ? String($execution.id) : 'manual';\n\n// The run itself succeeded, so status is 'ok' unless the CRM step reported errors.\n// A volume check on routed_count is what catches \"green but wrong\".\nreturn [{\n  json: {\n    ingest_version: 1,\n    event_type: 'signal',\n    workflow_key: 'lead-router',\n    occurred_at: $now.toUTC().toISO(),\n    status: error_count > 0 ? 'warn' : 'ok',\n    idempotency_key: execId + '-' + Date.now(),\n    provider_run_id: execId,\n    metrics: { leads_in, routed_count, contact_created_count, no_owner_count, error_count },\n    context: { source: 'sample-apollo-export', workflow: $workflow.name }\n  }\n}];"
+      },
+      "id": "50cf9ba8-fa9b-4274-8e8a-da2560726277",
+      "name": "Aggregate Outcomes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://yieldcue:8080/v1/ingest/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "52786d62-e903-4846-90ad-9b39cad36cb9",
+      "name": "Send YieldCue Signal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        176
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Lead Import": {
+      "main": [
+        [
+          {
+            "node": "Sample Apollo Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample Apollo Export": {
+      "main": [
+        [
+          {
+            "node": "Qualify Each Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qualify Each Lead": {
+      "main": [
+        [
+          {
+            "node": "CRM Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM Upsert": {
+      "main": [
+        [
+          {
+            "node": "Has Owner",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Aggregate Outcomes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Owner": {
+      "main": [
+        [
+          {
+            "node": "Build Digest Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Digest Email": {
+      "main": [
+        [
+          {
+            "node": "Send Digest (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Outcomes": {
+      "main": [
+        [
+          {
+            "node": "Send YieldCue Signal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
